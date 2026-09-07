@@ -1,0 +1,36 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<BridgeDeal>
+    <Metadata>
+        <Dealer>E</Dealer> <!-- N, E, S ou W -->
+        <Vulnerability>None</Vulnerability> <!-- None, NS, EW, All -->
+    </Metadata>
+
+    <Hands>
+        <Hand player="N">
+            <Spades>K</Spades>
+            <Hearts>A8</Hearts>
+            <Diamonds>K85</Diamonds>
+            <Clubs>QT87542</Clubs>
+        </Hand>
+        <Hand player="E">
+            <Spades>765</Spades>
+            <Hearts>KT652</Hearts>
+            <Diamonds>AQ72</Diamonds>
+            <Clubs>6</Clubs>
+        </Hand>
+        <Hand player="S">
+            <Spades>AQT843</Spades>
+            <Hearts>Q9743</Hearts>
+            <Diamonds>JT</Diamonds>
+            <Clubs></Clubs>
+        </Hand>
+        <Hand player="W">
+            <Spades>J92</Spades>
+            <Hearts>J</Hearts>
+            <Diamonds>9643</Diamonds>
+            <Clubs>AKJ93</Clubs>
+        </Hand>
+    </Hands>
+
+    <Sequence>Pass,Pass,1C,Pass,1H,2S,Pass,Pass,Pass</Sequence>
+</BridgeDeal>

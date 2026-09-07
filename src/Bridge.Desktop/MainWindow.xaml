@@ -1,0 +1,319 @@
+﻿<Window x:Class="Bridge.Desktop.MainWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        mc:Ignorable="d" Title="Bridge · Majeure Cinquième"
+        Width="1600" Height="960" MinWidth="1280" MinHeight="760"
+        WindowStartupLocation="CenterScreen" Background="#082F28">
+    <Window.Resources>
+        <Style x:Key="PanelStyle" TargetType="Border">
+            <Setter Property="Background" Value="#F7F2E8" />
+            <Setter Property="CornerRadius" Value="6" />
+            <Setter Property="Padding" Value="18" />
+        </Style>
+        <Style x:Key="SmallLabel" TargetType="TextBlock">
+            <Setter Property="FontSize" Value="11" />
+            <Setter Property="FontWeight" Value="SemiBold" />
+            <Setter Property="Foreground" Value="#93B8AB" />
+        </Style>
+        <Style x:Key="CardButtonStyle" TargetType="Button">
+            <Setter Property="Padding" Value="0" />
+            <Setter Property="Margin" Value="-9,0,0,0" />
+            <Setter Property="Background" Value="Transparent" />
+            <Setter Property="VerticalAlignment" Value="Bottom" />
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="Button">
+                        <Border x:Name="CardChrome" CornerRadius="5" Background="Transparent">
+                            <ContentPresenter />
+                        </Border>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Setter TargetName="CardChrome" Property="RenderTransform">
+                                    <Setter.Value><TranslateTransform Y="-10" /></Setter.Value>
+                                </Setter>
+                            </Trigger>
+                            <Trigger Property="IsEnabled" Value="False">
+                                <Setter TargetName="CardChrome" Property="Opacity" Value="0.58" />
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+        <DataTemplate x:Key="HandCardTemplate">
+            <Button Style="{StaticResource CardButtonStyle}" Click="Card_Click"
+                    IsHitTestVisible="{Binding IsPlayable}" Opacity="{Binding Opacity}" Tag="{Binding}">
+                <Image Source="{Binding ImagePath}" Width="70" Height="98" Stretch="Uniform" />
+            </Button>
+        </DataTemplate>
+        <DataTemplate x:Key="BidTemplate">
+            <Button Tag="{Binding}" Click="Bid_Click" IsEnabled="{Binding IsEnabled}"
+                    Margin="3" Padding="7,8" FontSize="14" Foreground="#17211D">
+                <TextBlock Text="{Binding Label}" Foreground="{Binding Foreground}"
+                           FontWeight="SemiBold" FontSize="14" />
+            </Button>
+        </DataTemplate>
+        <DataTemplate x:Key="SideCardTemplate">
+            <Image Source="{Binding ImagePath}" Width="54" Height="76" Stretch="Uniform" Margin="0,-57,0,0" />
+        </DataTemplate>
+    </Window.Resources>
+
+    <Grid>
+        <Grid.Background>
+            <RadialGradientBrush Center="0.5,0.45" RadiusX="0.82" RadiusY="0.9">
+                <GradientStop Color="#19745B" Offset="0" />
+                <GradientStop Color="#0B493C" Offset="0.72" />
+                <GradientStop Color="#072F28" Offset="1" />
+            </RadialGradientBrush>
+        </Grid.Background>
+        <Grid.RowDefinitions>
+            <RowDefinition Height="68" />
+            <RowDefinition Height="*" />
+            <RowDefinition Height="42" />
+        </Grid.RowDefinitions>
+
+        <Border Grid.Row="0" Background="#E616211D" BorderBrush="#38FFFFFF" BorderThickness="0,0,0,1">
+            <Grid Margin="22,0">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="*" />
+                    <ColumnDefinition Width="Auto" />
+                    <ColumnDefinition Width="Auto" />
+                </Grid.ColumnDefinitions>
+                <StackPanel VerticalAlignment="Center">
+                    <TextBlock Text="BRIDGE" FontFamily="Georgia" FontWeight="Bold" FontSize="23" />
+                    <TextBlock Text="MAJEURE CINQUIÈME" Style="{StaticResource SmallLabel}" />
+                </StackPanel>
+                <StackPanel Grid.Column="1" Orientation="Horizontal" VerticalAlignment="Center" Margin="20,0">
+                    <StackPanel Margin="0,0,28,0">
+                        <TextBlock Text="DONNE · VULNÉRABILITÉ" Style="{StaticResource SmallLabel}" />
+                        <TextBlock Text="{Binding VulnerabilityText}" FontFamily="Georgia" FontSize="18" FontWeight="Bold" />
+                    </StackPanel>
+                    <StackPanel Margin="0,0,28,0">
+                        <TextBlock Text="CONTRAT" Style="{StaticResource SmallLabel}" />
+                        <TextBlock Text="{Binding ContractText}" FontFamily="Georgia" FontSize="18" FontWeight="Bold" />
+                    </StackPanel>
+                    <StackPanel>
+                        <TextBlock Text="SCORE NORD-SUD" Style="{StaticResource SmallLabel}" />
+                        <TextBlock Text="{Binding ScoreText}" FontFamily="Georgia" FontSize="18" FontWeight="Bold" />
+                    </StackPanel>
+                </StackPanel>
+                <Button Grid.Column="2" Content="Nouvelle donne" Click="NewDeal_Click"
+                        Background="{StaticResource GoldBrush}" Padding="17,9" VerticalAlignment="Center" />
+            </Grid>
+        </Border>
+
+        <Grid Grid.Row="1" Margin="18">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="250" />
+                <ColumnDefinition Width="18" />
+                <ColumnDefinition Width="*" MinWidth="540" />
+                <ColumnDefinition Width="18" />
+                <ColumnDefinition Width="292" />
+            </Grid.ColumnDefinitions>
+
+            <Border Grid.Column="0" Style="{StaticResource PanelStyle}">
+                <Grid>
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto" />
+                        <RowDefinition Height="*" />
+                        <RowDefinition Height="Auto" />
+                    </Grid.RowDefinitions>
+                    <StackPanel>
+                        <TextBlock Text="FEUILLE D’ENCHÈRES" Foreground="{StaticResource InkBrush}"
+                                   FontFamily="Georgia" FontSize="17" FontWeight="Bold" />
+                        <TextBlock Text="Nord · Est · Sud · Ouest" Foreground="#68736E" FontSize="12" Margin="0,4,0,14" />
+                    </StackPanel>
+                    <ListBox Grid.Row="1" ItemsSource="{Binding AuctionCalls}" Background="Transparent"
+                             BorderThickness="0" Focusable="False"
+                             ScrollViewer.VerticalScrollBarVisibility="Auto"
+                             ScrollViewer.HorizontalScrollBarVisibility="Disabled"
+                             ScrollViewer.CanContentScroll="False">
+                        <ListBox.ItemTemplate>
+                            <DataTemplate>
+                                <Grid Margin="0,2">
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="54" />
+                                        <ColumnDefinition Width="*" />
+                                    </Grid.ColumnDefinitions>
+                                    <TextBlock Text="{Binding Seat}" Foreground="#64716B" FontSize="12" VerticalAlignment="Center" />
+                                    <Border Grid.Column="1" Background="#E4DCCE" CornerRadius="3" Padding="8,5">
+                                        <TextBlock Text="{Binding Call}" Foreground="{Binding Foreground}"
+                                                   FontWeight="SemiBold" FontSize="14" />
+                                    </Border>
+                                </Grid>
+                            </DataTemplate>
+                        </ListBox.ItemTemplate>
+                    </ListBox>
+                    <StackPanel Grid.Row="2">
+                        <Separator Margin="0,10" Background="#2C3B35" />
+                        <TextBlock Text="LEVÉES" Style="{StaticResource SmallLabel}" Foreground="#68736E" />
+                        <Grid Margin="0,5,0,0">
+                            <Grid.ColumnDefinitions><ColumnDefinition /><ColumnDefinition /></Grid.ColumnDefinitions>
+                            <StackPanel>
+                                <TextBlock Text="Déclarant" Foreground="#68736E" FontSize="12" />
+                                <TextBlock Text="{Binding DeclarerTricks}" Foreground="#18221E" FontFamily="Georgia" FontSize="26" />
+                            </StackPanel>
+                            <StackPanel Grid.Column="1">
+                                <TextBlock Text="Défense" Foreground="#68736E" FontSize="12" />
+                                <TextBlock Text="{Binding DefenderTricks}" Foreground="#18221E" FontFamily="Georgia" FontSize="26" />
+                            </StackPanel>
+                        </Grid>
+                    </StackPanel>
+                </Grid>
+            </Border>
+
+            <Grid Grid.Column="2">
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="126" />
+                    <RowDefinition Height="*" />
+                    <RowDefinition Height="132" />
+                </Grid.RowDefinitions>
+
+                <StackPanel Grid.Row="0" HorizontalAlignment="Center">
+                    <TextBlock Text="SUD" HorizontalAlignment="Center" Style="{StaticResource SmallLabel}" />
+                    <ScrollViewer HorizontalScrollBarVisibility="Auto" VerticalScrollBarVisibility="Disabled"
+                                  MaxWidth="820" HorizontalAlignment="Center" Focusable="False">
+                        <ItemsControl ItemsSource="{Binding SouthCards}" ItemTemplate="{StaticResource HandCardTemplate}"
+                                      Margin="9,5,0,0">
+                            <ItemsControl.ItemsPanel>
+                                <ItemsPanelTemplate><StackPanel Orientation="Horizontal" /></ItemsPanelTemplate>
+                            </ItemsControl.ItemsPanel>
+                        </ItemsControl>
+                    </ScrollViewer>
+                </StackPanel>
+
+                <Grid Grid.Row="1">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="100" />
+                        <ColumnDefinition Width="*" />
+                        <ColumnDefinition Width="100" />
+                    </Grid.ColumnDefinitions>
+                    <StackPanel Grid.Column="0" VerticalAlignment="Center" HorizontalAlignment="Center">
+                        <TextBlock Text="EST" HorizontalAlignment="Center" Style="{StaticResource SmallLabel}" />
+                        <StackPanel Visibility="{Binding ClosedCardsVisibility}">
+                            <Image Source="Assets/back.png" Width="58" Height="82" Margin="0,8" />
+                            <TextBlock Text="{Binding EastCountText}" HorizontalAlignment="Center" FontSize="12" />
+                        </StackPanel>
+                        <ItemsControl ItemsSource="{Binding EastCards}" ItemTemplate="{StaticResource SideCardTemplate}"
+                                      Visibility="{Binding OpenCardsVisibility}" Margin="0,62,0,0">
+                            <ItemsControl.ItemsPanel>
+                                <ItemsPanelTemplate><StackPanel /></ItemsPanelTemplate>
+                            </ItemsControl.ItemsPanel>
+                        </ItemsControl>
+                    </StackPanel>
+
+                    <Border Grid.Column="1" Width="310" Height="265" CornerRadius="132"
+                            BorderBrush="#44FFFFFF" BorderThickness="1" Background="#0D000000"
+                            HorizontalAlignment="Center" VerticalAlignment="Center">
+                        <Grid>
+                            <Grid.RowDefinitions><RowDefinition /><RowDefinition /><RowDefinition /></Grid.RowDefinitions>
+                            <Grid.ColumnDefinitions><ColumnDefinition /><ColumnDefinition /><ColumnDefinition /></Grid.ColumnDefinitions>
+                            <Image Grid.Row="0" Grid.Column="1" Source="{Binding SouthTrick}" Width="66" Height="93" VerticalAlignment="Bottom" />
+                            <Image Grid.Row="1" Grid.Column="0" Source="{Binding EastTrick}" Width="66" Height="93" HorizontalAlignment="Right" />
+                            <StackPanel Grid.Row="1" Grid.Column="1" HorizontalAlignment="Center" VerticalAlignment="Center">
+                                <TextBlock Text="{Binding TrickNumberText}" Style="{StaticResource SmallLabel}" HorizontalAlignment="Center" />
+                                <TextBlock Text="{Binding TurnText}" TextAlignment="Center" FontFamily="Georgia"
+                                           FontSize="15" FontWeight="Bold" TextWrapping="Wrap" Margin="0,5" />
+                            </StackPanel>
+                            <Image Grid.Row="1" Grid.Column="2" Source="{Binding WestTrick}" Width="66" Height="93" HorizontalAlignment="Left" />
+                            <Image Grid.Row="2" Grid.Column="1" Source="{Binding NorthTrick}" Width="66" Height="93" VerticalAlignment="Top" />
+                        </Grid>
+                    </Border>
+
+                    <StackPanel Grid.Column="2" VerticalAlignment="Center" HorizontalAlignment="Center">
+                        <TextBlock Text="OUEST" HorizontalAlignment="Center" Style="{StaticResource SmallLabel}" />
+                        <StackPanel Visibility="{Binding ClosedCardsVisibility}">
+                            <Image Source="Assets/back.png" Width="58" Height="82" Margin="0,8" />
+                            <TextBlock Text="{Binding WestCountText}" HorizontalAlignment="Center" FontSize="12" />
+                        </StackPanel>
+                        <ItemsControl ItemsSource="{Binding WestCards}" ItemTemplate="{StaticResource SideCardTemplate}"
+                                      Visibility="{Binding OpenCardsVisibility}" Margin="0,62,0,0">
+                            <ItemsControl.ItemsPanel>
+                                <ItemsPanelTemplate><StackPanel /></ItemsPanelTemplate>
+                            </ItemsControl.ItemsPanel>
+                        </ItemsControl>
+                    </StackPanel>
+                </Grid>
+
+                <StackPanel Grid.Row="2" HorizontalAlignment="Center" VerticalAlignment="Bottom">
+                    <ScrollViewer HorizontalScrollBarVisibility="Auto" VerticalScrollBarVisibility="Disabled"
+                                  MaxWidth="820" HorizontalAlignment="Center" Focusable="False">
+                        <ItemsControl ItemsSource="{Binding NorthCards}" ItemTemplate="{StaticResource HandCardTemplate}"
+                                      Margin="9,0,0,4">
+                            <ItemsControl.ItemsPanel>
+                                <ItemsPanelTemplate><StackPanel Orientation="Horizontal" /></ItemsPanelTemplate>
+                            </ItemsControl.ItemsPanel>
+                        </ItemsControl>
+                    </ScrollViewer>
+                    <TextBlock Text="NORD · VOUS" HorizontalAlignment="Center" Style="{StaticResource SmallLabel}" />
+                </StackPanel>
+            </Grid>
+
+            <Border Grid.Column="4" Style="{StaticResource PanelStyle}">
+                <Grid>
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto" />
+                        <RowDefinition Height="Auto" />
+                        <RowDefinition Height="*" />
+                    </Grid.RowDefinitions>
+                    <StackPanel Visibility="{Binding BiddingVisibility}">
+                        <TextBlock Text="VOTRE ENCHÈRE" Foreground="{StaticResource InkBrush}"
+                                   FontFamily="Georgia" FontSize="17" FontWeight="Bold" />
+                        <TextBlock Text="Choisissez un contrat supérieur" Foreground="#68736E" FontSize="12" Margin="0,4,0,10" />
+                        <ItemsControl ItemsSource="{Binding BidOptions}" ItemTemplate="{StaticResource BidTemplate}">
+                            <ItemsControl.ItemsPanel>
+                                <ItemsPanelTemplate><UniformGrid Columns="5" /></ItemsPanelTemplate>
+                            </ItemsControl.ItemsPanel>
+                        </ItemsControl>
+                        <Grid Margin="3,7,3,0">
+                            <Grid.ColumnDefinitions>
+                            <ColumnDefinition />
+                            <ColumnDefinition />
+                            <ColumnDefinition />
+                            </Grid.ColumnDefinitions>
+                            <Button Content="Passer" Click="Pass_Click" Background="#25312C" Foreground="White" Margin="0,0,4,0" />
+                            <Button Grid.Column="1" Content="Contre" Click="Double_Click" IsEnabled="{Binding CanDouble}"
+                                Background="#B43A32" Foreground="White" Margin="2,0" />
+                            <Button Grid.Column="2" Content="Surcontre" Click="Redouble_Click" IsEnabled="{Binding CanRedouble}"
+                                Background="#D7A84B" Foreground="#17211D" Margin="4,0,0,0" />
+                        </Grid>
+                    </StackPanel>
+
+                    <StackPanel Visibility="{Binding ResultVisibility}">
+                        <TextBlock Text="DONNE TERMINÉE" Foreground="{StaticResource InkBrush}"
+                                   FontFamily="Georgia" FontSize="17" FontWeight="Bold" />
+                        <TextBlock Text="{Binding ResultText}" Foreground="#435049" TextWrapping="Wrap"
+                                   FontSize="14" LineHeight="22" Margin="0,8,0,12" />
+                        <Button Content="{Binding ReplayButtonText}" Click="ReplayAi_Click" IsEnabled="{Binding CanReplay}"
+                            Background="#25312C" Foreground="White" Margin="0,0,0,7" />
+                        <Button Content="Redistribuer" Click="NewDeal_Click" Background="{StaticResource GoldBrush}" />
+                    </StackPanel>
+
+                    <StackPanel Grid.Row="1" Margin="0,18,0,8">
+                        <Separator Background="#2C3B35" Margin="0,0,0,14" />
+                        <TextBlock Text="JOURNAL DE TABLE" Foreground="#68736E" FontSize="11" FontWeight="SemiBold" />
+                    </StackPanel>
+                    <ListBox x:Name="ActivityList" Grid.Row="2" ItemsSource="{Binding Activity}"
+                             Background="Transparent" BorderThickness="0" FontFamily="Consolas"
+                             Foreground="#39463F" FontSize="11" ScrollViewer.HorizontalScrollBarVisibility="Disabled">
+                        <ListBox.ItemTemplate>
+                            <DataTemplate>
+                                <TextBlock Text="{Binding}" Foreground="#39463F" TextWrapping="Wrap" Margin="0,2" />
+                            </DataTemplate>
+                        </ListBox.ItemTemplate>
+                    </ListBox>
+                </Grid>
+            </Border>
+        </Grid>
+
+        <Border Grid.Row="2" Background="#D9121D19" BorderBrush="#30FFFFFF" BorderThickness="0,1,0,0">
+            <Grid Margin="22,0">
+                <TextBlock Text="{Binding StatusText}" VerticalAlignment="Center" FontSize="13" />
+                <TextBlock Text="IA · Majeure cinquième" HorizontalAlignment="Right" VerticalAlignment="Center"
+                           Style="{StaticResource SmallLabel}" />
+            </Grid>
+        </Border>
+    </Grid>
+</Window>
