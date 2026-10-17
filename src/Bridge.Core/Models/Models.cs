@@ -197,6 +197,12 @@ public readonly record struct AuctionCall(Seat Seat, AuctionAction Action, Bid? 
     };
 }
 
+/// <summary>Identifiant et paramètres de la règle SEF ayant produit une enchère.</summary>
+public sealed record BidExplanation(
+    string RuleId,
+    IReadOnlyDictionary<string, string> Values,
+    string Source = "SEF.txt");
+
 /// <summary>
 /// Carte jouée (siège + carte).
 /// </summary>

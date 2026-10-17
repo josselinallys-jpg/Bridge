@@ -146,7 +146,7 @@ public sealed class SefOpenerRebidTests
     // --- Réponse mineure : soutien simple à cinq cartes ---
 
     [Fact]
-    public void MinorResponse_FiveCardSupportWeak_RaisesSimply()
+    public void MinorResponse_FiveCardSupportWithFiveH_UsesOneNoTrump()
     {
         var responder = Cards(
             "CQ", "C9", "C7", "C5", "C2",
@@ -155,7 +155,7 @@ public sealed class SefOpenerRebidTests
             "D6", "D2");
         var auction = AuctionWithBids((Seat.North, new Bid(1, Denomination.Clubs)));
 
-        Assert.Equal(new Bid(2, Denomination.Clubs),
+        Assert.Equal(new Bid(1, Denomination.NoTrump),
             _engine.DecideBid(Seat.South, responder, auction));
     }
 

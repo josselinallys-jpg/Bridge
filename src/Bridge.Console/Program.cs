@@ -17,7 +17,7 @@ logger.Information("╚═══════════════════
 // Configuration du jeu
 var random = new Random();
 var biddingAi = new SefBiddingEngine(logger);
-var cardPlayAi = new AdvancedCardPlayAi(logger);
+var cardPlayAi = new ContractAwareCardPlayAi(logger);
 var engine = new BridgeGameEngine(biddingAi, cardPlayAi, logger);
 
 logger.Information("\nBienvenue au Bridge!");
@@ -71,6 +71,7 @@ void PlayDeal()
         {
             call = engine.DecideCall(currentSeat, deal[currentSeat], auction);
             logger.Information(call.ToString());
+            logger.Information($"Règle appliquée : {biddingAi.LastDecisionRule}");
         }
 
         auction.AddCall(call);

@@ -18,6 +18,7 @@
 
   <ItemGroup>
     <Resource Include="Assets\*.png" />
+    <None Update="Rules\auction-tooltip-rules.csv" CopyToOutputDirectory="PreserveNewest" />
   </ItemGroup>
 
 </Project>

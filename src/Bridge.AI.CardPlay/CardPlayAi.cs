@@ -22,14 +22,17 @@ public sealed class AdvancedCardPlayAi : ICardPlayStrategy
         if (legalCards.Count == 0)
             throw new InvalidOperationException("Aucune carte légale disponible.");
 
+        var knowledge = CardKnowledge.From(game, seat);
+        var plan = CardPlayPlan.Build(game, seat, knowledge);
         var decision = game.CurrentTrick.Count == 0
-            ? ChooseLead(legalCards, game, seat)
-            : ChooseFollow(legalCards, game, seat);
+            ? ChooseLead(legalCards, game, seat, plan)
+            : ChooseFollow(legalCards, game, seat, knowledge);
         _logger.Debug($"[CardPlay] {seat} joue {decision.Card} — {decision.Reason}");
         return decision.Card;
     }
 
-    private static Decision ChooseLead(IReadOnlyList<Card> legalCards, ICardPlayEngine game, Seat seat)
+    private static Decision ChooseLead(IReadOnlyList<Card> legalCards, ICardPlayEngine game, Seat seat,
+        CardPlayPlan plan)
     {
         var declarerSide = IsDeclarerSide(game, seat);
         var trump = game.GetTrumpSuit();
@@ -43,15 +46,14 @@ public sealed class AdvancedCardPlayAi : ICardPlayStrategy
             if (shortHandRuff.HasValue)
                 return new(shortHandRuff.Value, "coupe de la main courte avant le retrait des atouts");
 
-            if (trump.HasValue && CombinedSuitLength(game, seat, trump.Value) >= 8 &&
-                CountSureWinners(game, seat) >= RequiredTricks(game))
+            if (trump.HasValue && CombinedSuitLength(game, seat, trump.Value) >= 8 && plan.ContractAssured)
             {
                 var lowTrump = legalCards.Where(card => card.Suit == trump).OrderBy(card => card.Rank).FirstOrDefault();
                 if (legalCards.Contains(lowTrump))
                     return new(lowTrump, "retrait des atouts après compte des levées sûres");
             }
 
-            var enoughSureWinners = !trump.HasValue || CountSureWinners(game, seat) >= RequiredTricks(game);
+            var enoughSureWinners = !trump.HasValue || plan.ContractAssured;
             if (enoughSureWinners)
             {
                 var sequence = TopOfSequence(legalCards);
@@ -59,7 +61,7 @@ public sealed class AdvancedCardPlayAi : ICardPlayStrategy
                     return new(sequence.Value, "affranchissement d'une séquence d'honneurs");
             }
 
-            var leadSuit = DeclarerLeadSuit(legalCards, game, seat, trump);
+            var leadSuit = DeclarerLeadSuit(legalCards, game, seat, trump, plan.OpeningLeadSuit);
             return LeadFromSuit(leadSuit, trump, "plan d'affranchissement de la couleur longue");
         }
 
@@ -68,7 +70,7 @@ public sealed class AdvancedCardPlayAi : ICardPlayStrategy
         {
             var returns = legalCards.Where(card => card.Suit == requestedSuit).OrderBy(card => card.Rank).ToList();
             if (returns.Count > 0)
-                return new(returns[0], "retour dans la couleur appelée par le partenaire");
+                return PartnerSuitReturn(returns, trump);
         }
 
             var partnerBidSuits = NaturalBidSuits(game, seat.Partner()).ToList();
@@ -76,7 +78,7 @@ public sealed class AdvancedCardPlayAi : ICardPlayStrategy
             {
                 var partnerSuitCards = legalCards.Where(card => card.Suit == partnerBidSuits[^1]).ToList();
                 if (partnerSuitCards.Count > 0)
-                return LeadFromSuit(partnerSuitCards, trump, "entame dans la couleur naturelle du partenaire");
+                return PartnerSuitReturn(partnerSuitCards, trump);
             }
 
         var candidates = trump.HasValue
@@ -95,16 +97,24 @@ public sealed class AdvancedCardPlayAi : ICardPlayStrategy
         var declarerSuits = NaturalBidSuits(game, game.GetDeclarer()).ToHashSet();
         var dummySuits = NaturalBidSuits(game, game.GetDeclarer().Partner()).ToHashSet();
         var allBidSuits = game.AuctionCalls.SelectMany(call => NaturalBidSuit(game.AuctionCalls, call)).ToHashSet();
-        var selected = candidates.GroupBy(card => card.Suit)
-            .OrderByDescending(group => OpeningLeadScore(group, declarerSuits, dummySuits, allBidSuits, trump))
+        var selected = (trump.HasValue
+                ? candidates.GroupBy(card => card.Suit)
+                    .OrderByDescending(group => OpeningLeadScore(group, declarerSuits, dummySuits, allBidSuits, trump))
+                : candidates.GroupBy(card => card.Suit)
+                    .OrderByDescending(group => NoTrumpOpeningLeadScore(group, declarerSuits, dummySuits, allBidSuits)))
             .First().ToList();
         var context = allBidSuits.Contains(selected[0].Suit)
-            ? "entame dans la couleur la plus prometteuse selon les enchères"
-            : "entame dans une couleur non nommée par les adversaires";
+            ? trump.HasValue
+                ? "entame dans la couleur la plus prometteuse selon les enchères"
+                : "entame SA dans une couleur tenue selon les enchères"
+            : trump.HasValue
+                ? "entame à la couleur dans une couleur non nommée par les adversaires"
+                : "entame SA dans une couleur non nommée par les adversaires";
         return LeadFromSuit(selected, trump, context);
     }
 
-    private static Decision ChooseFollow(IReadOnlyList<Card> legalCards, ICardPlayEngine game, Seat seat)
+    private static Decision ChooseFollow(IReadOnlyList<Card> legalCards, ICardPlayEngine game, Seat seat,
+        CardKnowledge knowledge)
     {
         var trick = game.CurrentTrick;
         var leadSuit = trick[0].Card.Suit;
@@ -124,7 +134,10 @@ public sealed class AdvancedCardPlayAi : ICardPlayStrategy
         if (declarerSide && ShouldHoldUp(game, seat, following, trick))
             return new(following[0], "laissez-passer pour couper les communications");
 
-        var finesse = declarerSide ? FinesseCard(game, seat, following, winner.Card) : null;
+        if (declarerSide && DirectFinesseCard(game, seat, following, winner.Card) is { } directFinesse)
+            return new(directFinesse, "impasse directe : petite carte vers la fourchette");
+
+        var finesse = declarerSide ? FinesseCard(game, seat, following, winner.Card, knowledge) : null;
         if (finesse.HasValue)
             return new(finesse.Value, "impasse en jouant l'honneur inférieur de la tenace");
 
@@ -133,12 +146,18 @@ public sealed class AdvancedCardPlayAi : ICardPlayStrategy
             var unblock = UnblockHonor(following, winner.Card);
             if (unblock.HasValue)
                 return new(unblock.Value, "déblocage d'honneur, coup du cachalot");
-            return new(AttitudeSignal(following), "signalisation d'attitude au partenaire");
+            return new(declarerSide ? AttitudeSignal(following) : ParitySignal(following),
+                declarerSide ? "signalisation d'attitude au partenaire" : "signalisation pair-impair");
         }
 
         var honorCover = CoverHonor(following, winner.Card);
-        if (honorCover.HasValue && IsOpponent(game, seat, winner.Seat))
+        if (honorCover.HasValue && IsOpponent(game, seat, winner.Seat) &&
+            (!declarerSide && following.Count <= 2 || declarerSide))
             return new(honorCover.Value, "honneur sur honneur");
+
+        if (!declarerSide && following.Count > 2 && winner.Card.Rank >= Rank.Queen &&
+            trick.Count == 1)
+            return new(following[0], "honneur conservé avec une couleur longue");
 
         var winners = following.Where(card => Beats(card, winner.Card, leadSuit, trump)).OrderBy(card => card.Rank).ToList();
         if (trick.Count == 2 && !declarerSide)
@@ -166,7 +185,11 @@ public sealed class AdvancedCardPlayAi : ICardPlayStrategy
                 .Where(card => card.Suit == trump && Beats(card, winner.Card, game.CurrentTrick[0].Card.Suit, trump))
                 .OrderBy(card => card.Rank)
                 .ToList();
-            if (trumps.Count > 0)
+            var declarerSide = IsDeclarerSide(game, seat);
+            var ownTrumps = game.Hand(seat).Count(card => card.Suit == trump.Value);
+            var partnerTrumps = game.Hand(seat.Partner()).Count(card => card.Suit == trump.Value);
+            var hasDiscard = legalCards.Any(card => card.Suit != trump.Value);
+            if (trumps.Count > 0 && (!declarerSide || ownTrumps <= partnerTrumps || !hasDiscard))
                 return new(trumps[0], "coupe avec le plus petit atout gagnant");
         }
 
@@ -197,6 +220,9 @@ public sealed class AdvancedCardPlayAi : ICardPlayStrategy
 
     private static Card? LeadTowardTenace(IReadOnlyList<Card> legalCards, ICardPlayEngine game, Seat seat)
     {
+        if (!IsDeclarerSide(game, seat))
+            return null;
+
         var partnerHand = game.Hand(seat.Partner());
         foreach (var suit in Enum.GetValues<Suit>())
         {
@@ -237,7 +263,8 @@ public sealed class AdvancedCardPlayAi : ICardPlayStrategy
         return singleton == default ? null : singleton;
     }
 
-    private static Card? FinesseCard(ICardPlayEngine game, Seat seat, IReadOnlyList<Card> following, Card winner)
+    private static Card? FinesseCard(ICardPlayEngine game, Seat seat, IReadOnlyList<Card> following,
+        Card winner, CardKnowledge knowledge)
     {
         if (game.CurrentTrick[0].Seat != seat.Partner())
             return null;
@@ -245,14 +272,47 @@ public sealed class AdvancedCardPlayAi : ICardPlayStrategy
         var hasAceQueen = following.Any(card => card.Rank == Rank.Ace) &&
             following.Any(card => card.Rank == Rank.Queen) &&
             !game.PlayedCards.Any(play => play.Card == new Card(suit, Rank.King));
-        if (hasAceQueen && winner.Rank < Rank.Queen)
+        if (hasAceQueen && winner.Rank < Rank.Queen &&
+            knowledge.IsLikelyWithOpponent(new Card(suit, Rank.King)))
             return following.First(card => card.Rank == Rank.Queen);
         var hasKingJack = following.Any(card => card.Rank == Rank.King) &&
             following.Any(card => card.Rank == Rank.Jack) &&
             !game.PlayedCards.Any(play => play.Card == new Card(suit, Rank.Queen));
-        return hasKingJack && winner.Rank < Rank.Jack
+        return hasKingJack && winner.Rank < Rank.Jack &&
+            knowledge.IsLikelyWithOpponent(new Card(suit, Rank.Queen))
             ? following.First(card => card.Rank == Rank.Jack)
             : null;
+    }
+
+    private static Card? DirectFinesseCard(ICardPlayEngine game, Seat seat,
+        IReadOnlyList<Card> following, Card winner)
+    {
+        if (game.CurrentTrick.Count != 1 || game.CurrentTrick[0].Seat != seat.Partner())
+            return null;
+
+        var suit = winner.Suit;
+        var ranks = following.Select(card => card.Rank).ToHashSet();
+        var missing = new[]
+        {
+            (High: Rank.Ace, Low: Rank.King, Target: Rank.Queen),
+            (High: Rank.Ace, Low: Rank.Queen, Target: Rank.King),
+            (High: Rank.King, Low: Rank.Jack, Target: Rank.Queen),
+            (High: Rank.Queen, Low: Rank.Ten, Target: Rank.Jack)
+        };
+        foreach (var (high, low, target) in missing)
+        {
+            if (!ranks.Contains(high) || !ranks.Contains(low) || winner.Rank >= low ||
+                game.PlayedCards.Any(play => play.Card == new Card(suit, target)))
+                continue;
+
+            var combinedLength = game.Hand(seat).Count(card => card.Suit == suit) +
+                game.Hand(seat.Partner()).Count(card => card.Suit == suit);
+            var cashThreshold = target == Rank.King ? 11 : target == Rank.Queen ? 9 : int.MaxValue;
+            if (combinedLength >= cashThreshold)
+                return following.First(card => card.Rank == high);
+            return following.OrderBy(card => card.Rank).First();
+        }
+        return null;
     }
 
     private static bool ShouldBathCoup(ICardPlayEngine game, Seat seat, IReadOnlyList<Card> following) =>
@@ -299,6 +359,14 @@ public sealed class AdvancedCardPlayAi : ICardPlayStrategy
         return HasTopHonor(cards) && cards.Count >= 3 ? spots[^1] : spots[0];
     }
 
+    private static Card ParitySignal(IReadOnlyList<Card> cards)
+    {
+        var ordered = cards.OrderBy(card => card.Rank).ToList();
+        return ordered.Count % 2 == 1
+            ? ordered[0]
+            : ordered[^1];
+    }
+
     private static Suit? PartnerRequestedSuit(ICardPlayEngine game, Seat seat)
     {
         var partnerCards = game.PlayedCards.Where(play => play.Seat == seat.Partner()).ToList();
@@ -321,13 +389,38 @@ public sealed class AdvancedCardPlayAi : ICardPlayStrategy
 
     private static Decision LeadFromSuit(IReadOnlyList<Card> cards, Suit? trump, string reason)
     {
+        var ordered = cards.OrderByDescending(card => card.Rank).ToList();
+        var ranks = ordered.Select(card => card.Rank).ToHashSet();
+
+        if (!trump.HasValue)
+        {
+            if (ranks.Contains(Rank.Ace) && ranks.Contains(Rank.King) &&
+                !ranks.Contains(Rank.Queen) && !ranks.Contains(Rank.Jack) && ordered.Count >= 5)
+                return new(ordered[3], $"{reason}, quatrième meilleure sous As-Roi");
+            if (ordered.Count >= 6 && ranks.Contains(Rank.Ace) && ranks.Contains(Rank.Queen) &&
+                ranks.Contains(Rank.Jack))
+                return new(ordered.First(card => card.Rank == Rank.Queen), $"{reason}, Dame avec As-Dame-Valet long");
+            if (ranks.Contains(Rank.Ace) && ranks.Contains(Rank.Jack) && ranks.Contains(Rank.Ten))
+                return new(ordered.First(card => card.Rank == Rank.Jack), $"{reason}, Valet avec As-Valet-10");
+        }
+        else if (ordered.Count == 2 && ranks.Contains(Rank.Ace) && ranks.Contains(Rank.King))
+        {
+            return new(ordered.First(card => card.Rank == Rank.King), $"{reason}, Roi puis As avec As-Roi secs");
+        }
+
         var sequence = TopOfSequence(cards);
         if (sequence.HasValue)
             return new(sequence.Value, $"{reason}, tête de séquence");
-        var ordered = cards.OrderByDescending(card => card.Rank).ToList();
         if (!trump.HasValue && ordered.Count >= 4)
             return new(ordered[3], $"{reason}, quatrième meilleure");
         return new(ordered[^1], $"{reason}, petite carte");
+    }
+
+    private static Decision PartnerSuitReturn(IReadOnlyList<Card> cards, Suit? trump)
+    {
+        if (!trump.HasValue)
+            return new(ParitySignal(cards), "retour pair-impair dans la couleur du partenaire");
+        return LeadFromSuit(cards, trump, "retour dans la couleur du partenaire");
     }
 
     private static int OpeningLeadScore(IEnumerable<Card> suitCards, IReadOnlySet<Suit> declarerSuits,
@@ -342,6 +435,21 @@ public sealed class AdvancedCardPlayAi : ICardPlayStrategy
         if (trump == suit) score -= 12;
         if (TopOfSequence(cards).HasValue) score += 10;
         if (cards.Count == 1 && trump.HasValue) score += 12;
+        return score;
+    }
+
+    private static int NoTrumpOpeningLeadScore(IEnumerable<Card> suitCards,
+        IReadOnlySet<Suit> declarerSuits, IReadOnlySet<Suit> dummySuits,
+        IReadOnlySet<Suit> allBidSuits)
+    {
+        var cards = suitCards.ToList();
+        var suit = cards[0].Suit;
+        var score = cards.Count * 7;
+        if (cards.Count >= 4) score += 10;
+        if (TopOfSequence(cards).HasValue) score += 18;
+        if (!allBidSuits.Contains(suit)) score += 5;
+        if (declarerSuits.Contains(suit)) score -= 16;
+        if (dummySuits.Contains(suit)) score -= 8;
         return score;
     }
 
@@ -409,7 +517,7 @@ public sealed class AdvancedCardPlayAi : ICardPlayStrategy
         .First().OrderBy(card => card.Rank).First();
 
     private static List<Card> DeclarerLeadSuit(
-        IEnumerable<Card> cards, ICardPlayEngine game, Seat seat, Suit? trump)
+        IEnumerable<Card> cards, ICardPlayEngine game, Seat seat, Suit? trump, Suit? openingLeadSuit)
     {
         var partnerCards = game.Hand(seat.Partner());
         var candidates = cards
@@ -418,7 +526,8 @@ public sealed class AdvancedCardPlayAi : ICardPlayStrategy
             .OrderByDescending(group => group.Count() * 5 +
                 group.Count(card => card.Rank >= Rank.Queen) * 2 +
                 partnerCards.Count(card => card.Suit == group.Key) * 2 +
-                partnerCards.Count(card => card.Suit == group.Key && card.Rank >= Rank.Queen))
+                partnerCards.Count(card => card.Suit == group.Key && card.Rank >= Rank.Queen) -
+                (openingLeadSuit == group.Key && !TopOfSequence(group).HasValue ? 3 : 0))
             .ThenByDescending(group => group.Max(card => (int)card.Rank))
             .FirstOrDefault();
         return candidates?.ToList() ?? cards.ToList();

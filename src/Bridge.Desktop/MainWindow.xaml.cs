@@ -16,6 +16,7 @@ public partial class MainWindow : Window, INotifyPropertyChanged
 {
     private readonly Random _random = new();
     private readonly ILogger _logger;
+    private readonly SefBiddingEngine _biddingEngine;
     private readonly BridgeGameEngine _bridgeEngine;
     private Deal? _deal;
     private Deal? _initialDeal;
@@ -48,9 +49,10 @@ public partial class MainWindow : Window, INotifyPropertyChanged
         InitializeComponent();
         _logger = new ConsoleFileLogger("logs", LogLevel.Information);
         LoggerProvider.SetLogger(_logger);
+        _biddingEngine = new SefBiddingEngine(_logger);
         _bridgeEngine = new BridgeGameEngine(
-            new SefBiddingEngine(_logger),
-            new AdvancedCardPlayAi(_logger),
+            _biddingEngine,
+            new ContractAwareCardPlayAi(_logger),
             _logger);
 
         CreateBidOptions();
@@ -135,13 +137,14 @@ public partial class MainWindow : Window, INotifyPropertyChanged
             return;
         }
 
+        var version = _dealVersion;
         var seat = _cardGame.NextToPlay;
         _isBusy = true;
         RefreshView();
-        await PlayCardAsync(seat, card, _dealVersion);
-        if (_phase == GamePhase.Playing)
+        await PlayCardAsync(seat, card, version);
+        if (version == _dealVersion && _phase == GamePhase.Playing)
         {
-            await ProcessAiPlayAsync(_dealVersion);
+            await ProcessAiPlayAsync(version);
         }
     }
 
@@ -170,6 +173,7 @@ public partial class MainWindow : Window, INotifyPropertyChanged
         AuctionCalls.Clear();
         ClearTrick();
         AddActivity($"Donne {_boardNumber}. Vulnérabilité : {VulnerabilityName(_vulnerability)}.");
+        LogDealHands(_deal);
         StatusText = "À vous d’enchérir. Sélectionnez un contrat ou passez.";
         OnPropertyChanged(nameof(VulnerabilityText));
         RefreshView();
@@ -289,12 +293,12 @@ public partial class MainWindow : Window, INotifyPropertyChanged
 
     private async Task ProcessAiPlayAsync(int version)
     {
-        if (_cardGame is null)
+        if (version != _dealVersion || _cardGame is null)
         {
             return;
         }
 
-        while (!_cardGame.IsComplete && !IsHumanControlled(_cardGame.NextToPlay) && version == _dealVersion)
+        while (version == _dealVersion && !_cardGame.IsComplete && !IsHumanControlled(_cardGame.NextToPlay))
         {
             var seat = _cardGame.NextToPlay;
             TurnText = $"{SeatName(seat)} joue";
@@ -417,13 +421,16 @@ public partial class MainWindow : Window, INotifyPropertyChanged
         AddActivity("Replay des enchères IA à quatre mains ouvertes.");
         RefreshView();
 
+        var replayCalls = new List<AuctionCall>();
         foreach (var call in _aiAnalysis.AuctionCalls)
         {
             if (version != _dealVersion)
                 return;
 
             var text = CallText(call);
-            AuctionCalls.Add(new AuctionItem(SeatName(call.Seat), text, CallBrush(call)));
+            AuctionCalls.Add(new AuctionItem(SeatName(call.Seat), text, CallBrush(call),
+                ExplainCallText(call, replayCalls, _initialDeal[call.Seat])));
+            replayCalls.Add(call);
             TurnText = $"{SeatName(call.Seat)} · {text}";
             StatusText = $"Enchères IA : {SeatName(call.Seat)} annonce {text}.";
             await Task.Delay(280);
@@ -465,6 +472,9 @@ public partial class MainWindow : Window, INotifyPropertyChanged
                 await Task.Delay(150);
             }
 
+            if (version != _dealVersion)
+                return;
+
             var trickNumber = playIndex / 4 + 1;
             TurnText = $"Pli {trickNumber} · {SeatName(winner)}";
             if (playIndex + 4 < plays.Count &&
@@ -473,6 +483,9 @@ public partial class MainWindow : Window, INotifyPropertyChanged
                 return;
             SetTrick(_cardGame.CurrentTrick);
         }
+
+        if (version != _dealVersion)
+            return;
 
         FinishReplay($"L’IA réalise {_aiAnalysis.CardPlay.DeclarerTricks} levées pour le déclarant.");
     }
@@ -522,11 +535,291 @@ public partial class MainWindow : Window, INotifyPropertyChanged
             return;
         }
 
+        var previousCalls = _auction.Calls.ToList();
         _auction.AddCall(call);
         var text = CallText(call);
-        AuctionCalls.Add(new AuctionItem(SeatName(call.Seat), text, CallBrush(call)));
+        AuctionCalls.Add(new AuctionItem(SeatName(call.Seat), text, CallBrush(call),
+            ExplainCallText(call, previousCalls, _deal?[call.Seat])));
         AddActivity($"{SeatName(call.Seat)} : {text}.");
     }
+
+    private void LogDealHands(Deal deal)
+    {
+        foreach (var seat in Enum.GetValues<Seat>())
+        {
+            var cards = deal[seat]
+                .OrderByDescending(card => card.Suit)
+                .ThenByDescending(card => card.Rank);
+            _logger.Information($"[Desktop] Main {SeatName(seat)} : {string.Join(' ', cards)}");
+        }
+    }
+
+    private string ExplainCallText(AuctionCall call, IReadOnlyList<AuctionCall> previousCalls,
+        IReadOnlyList<Card>? hand)
+    {
+        if (hand is null)
+            return "Enchère non prévue";
+        var explanation = _biddingEngine.ExplainCall(call.Seat, hand, previousCalls, call);
+        return AuctionTooltipRules.Get(explanation.RuleId, explanation.Values);
+    }
+
+    private static string ExplainBid(AuctionCall call, IReadOnlyList<AuctionCall> previousCalls,
+        IReadOnlyList<Card>? hand)
+    {
+        const string unknown = "Enchère non prévue";
+        if (call.Action == AuctionAction.Pass)
+            return Rule("pass");
+        if (call.Action == AuctionAction.Double)
+            return Rule("double");
+        if (call.Action == AuctionAction.Redouble)
+            return Rule("redouble");
+        if (call.Bid is not { } bid)
+            return unknown;
+
+        var evaluation = hand is null ? null : new HandEvaluation(hand);
+        var partnerBids = previousCalls.Where(existing =>
+            existing.Action == AuctionAction.Bid && existing.Seat == call.Seat.Partner()).ToList();
+        var ownBids = previousCalls.Where(existing =>
+            existing.Action == AuctionAction.Bid && existing.Seat == call.Seat).ToList();
+        var has4Nt = ownBids.Any(existing => existing.Bid == new Bid(4, Denomination.NoTrump));
+        var lastPartnerBid = partnerBids.LastOrDefault().Bid;
+
+        if (!previousCalls.Any(existing => existing.Action == AuctionAction.Bid))
+            return ExplainOpening(bid, evaluation) ?? unknown;
+
+        if (ownBids.Count == 0 && partnerBids.Count == 0)
+            return ExplainIntervention(bid, evaluation);
+
+        var oneNoTrumpRule = ExplainOneNoTrumpBid(call, bid, previousCalls, evaluation, unknown);
+        if (oneNoTrumpRule is not null)
+            return oneNoTrumpRule;
+
+        if (bid == new Bid(4, Denomination.NoTrump) && HasAgreedSuit(previousCalls, call.Seat))
+            return Rule("blackwood-ask");
+        if (has4Nt)
+            return bid.Denomination switch
+            {
+                Denomination.Clubs => Rule("blackwood-0-3"),
+                Denomination.Diamonds => Rule("blackwood-1-4"),
+                Denomination.Hearts when evaluation is not null && evaluation.Cards.Any(card =>
+                    card == new Card(Suit.Hearts, Rank.Queen)) => Rule("blackwood-2-5-queen"),
+                Denomination.Hearts => Rule("blackwood-2-5-no-queen"),
+                Denomination.Spades => Rule("blackwood-2-5-queen"),
+                _ => Rule("slam")
+            };
+        if (bid == new Bid(1, Denomination.NoTrump) && evaluation is not null && evaluation.IsNoTrumpOpeningShape &&
+            evaluation.HighCardPoints is >= 15 and <= 17)
+            return Rule("opening-1nt", evaluation);
+        if (bid.Level is >= 5 and <= 7 && (has4Nt || HasAgreedSuit(previousCalls, call.Seat)))
+            return Rule("slam");
+        if (lastPartnerBid is { } partnerBid &&
+            partnerBid.Denomination is Denomination.Hearts or Denomination.Spades)
+        {
+            if (bid.Denomination == partnerBid.Denomination && bid.Level is >= 2 and <= 4)
+                return ExplainMajorSupport(bid, evaluation);
+            if (bid.Denomination is Denomination.Hearts or Denomination.Spades &&
+                bid.Denomination != partnerBid.Denomination && bid.Level is 1 or 2 or 3)
+                return ExplainMajorChange(bid, evaluation);
+        }
+        if (bid.Denomination is Denomination.Hearts or Denomination.Spades && bid.Level == 4 &&
+            lastPartnerBid is { Denomination: Denomination.Hearts or Denomination.Spades })
+            return Rule("major-support-4", evaluation, ("cartes", "fit"));
+        if (bid.Denomination == Denomination.NoTrump && bid.Level is >= 1 and <= 4 &&
+            (evaluation?.IsBalanced == true || bid.Level == 4))
+            return Rule("nt", evaluation, ("palier", bid.Level.ToString()));
+        if (bid.Denomination is Denomination.Clubs or Denomination.Diamonds &&
+            bid.Level is 1 or 2 or 3 &&
+            lastPartnerBid is { Denomination: Denomination.Clubs or Denomination.Diamonds })
+            return Rule("minor-change", evaluation, ("palier", bid.Level.ToString()));
+        if (bid.Denomination is Denomination.Hearts or Denomination.Spades && bid.Level is 1 or 2)
+            return ExplainMajorChange(bid, evaluation);
+        return unknown;
+    }
+
+    private static string ExplainIntervention(Bid bid, HandEvaluation? hand)
+    {
+        if (bid.Level == 1 && bid.Denomination is Denomination.Hearts or Denomination.Spades)
+            return Rule("intervention-major", hand,
+                ("couleur", SuitName(bid.Denomination)),
+                ("cartes", hand?.SuitLength((Suit)bid.Denomination).ToString() ?? "5"));
+        if (bid.Level == 1 && bid.Denomination is Denomination.Clubs or Denomination.Diamonds)
+            return Rule("intervention-minor", hand, ("couleur", SuitName(bid.Denomination)));
+        if (bid.Level == 2 && bid.Denomination != Denomination.NoTrump && hand is not null)
+        {
+            var suitLength = hand.SuitLength((Suit)bid.Denomination);
+            if (suitLength >= 6 && hand.HighCardPoints <= 10)
+                return Rule("intervention-jump", hand,
+                    ("couleur", SuitName(bid.Denomination)), ("cartes", suitLength.ToString()));
+            if (suitLength >= 5 && hand.HonorLengthPoints is >= 9 and <= 18)
+                return Rule("intervention-two-level", hand,
+                    ("couleur", SuitName(bid.Denomination)), ("cartes", suitLength.ToString()));
+        }
+        if (bid.Denomination == Denomination.NoTrump && bid.Level is 1 or 2)
+            return Rule("intervention-nt", hand, ("palier", bid.Level.ToString()));
+        return "Enchère non prévue";
+    }
+
+    private static string? ExplainOneNoTrumpBid(AuctionCall call, Bid bid,
+        IReadOnlyList<AuctionCall> previousCalls, HandEvaluation? hand, string unknown)
+    {
+        var opening = previousCalls.FirstOrDefault(existing =>
+            existing.Action == AuctionAction.Bid && existing.Bid == new Bid(1, Denomination.NoTrump));
+        if (opening.Action != AuctionAction.Bid)
+            return null;
+
+        var sideBids = previousCalls.Where(existing =>
+            existing.Action == AuctionAction.Bid && existing.Seat.IsNorthSouth() == call.Seat.IsNorthSouth())
+            .Select(existing => existing.Bid!.Value).ToList();
+        var partnerBids = previousCalls.Where(existing =>
+            existing.Action == AuctionAction.Bid && existing.Seat == call.Seat.Partner())
+            .Select(existing => existing.Bid!.Value).ToList();
+        var ownBids = previousCalls.Where(existing =>
+            existing.Action == AuctionAction.Bid && existing.Seat == call.Seat)
+            .Select(existing => existing.Bid!.Value).ToList();
+        var partnerLast = partnerBids.LastOrDefault();
+        var ownLast = ownBids.LastOrDefault();
+
+        if (opening.Seat == call.Seat.Partner() && ownBids.Count == 0 && partnerLast == opening.Bid)
+        {
+            if (bid == new Bid(2, Denomination.Clubs) && hand is not null && hand.HasFourCardMajor &&
+                hand.HonorLengthPoints >= 8)
+                return Rule("one-nt-stayman", hand);
+            if (bid == new Bid(2, Denomination.Diamonds) && hand is not null && hand.SuitLength(Suit.Hearts) >= 5)
+                return Rule("one-nt-texas-hearts", hand, ("cartes", hand.SuitLength(Suit.Hearts).ToString()));
+            if (bid == new Bid(2, Denomination.Hearts) && hand is not null && hand.SuitLength(Suit.Spades) >= 5)
+                return Rule("one-nt-texas-spades", hand, ("cartes", hand.SuitLength(Suit.Spades).ToString()));
+            if (bid == new Bid(2, Denomination.Spades) && hand is not null && hand.SuitLength(Suit.Clubs) >= 5)
+                return Rule("one-nt-texas-minor", hand, ("couleur", "Trèfles"), ("cartes", hand.SuitLength(Suit.Clubs).ToString()));
+            if (bid == new Bid(3, Denomination.Clubs) && hand is not null && hand.SuitLength(Suit.Diamonds) >= 5)
+                return Rule("one-nt-texas-minor", hand, ("couleur", "Carreaux"), ("cartes", hand.SuitLength(Suit.Diamonds).ToString()));
+            if (bid.Denomination == Denomination.NoTrump && bid.Level is >= 2 and <= 7)
+                return Rule("one-nt-quantitative", hand, ("palier", bid.Level.ToString()));
+            if (bid.Denomination is Denomination.Hearts or Denomination.Spades && bid.Level == 3 &&
+                hand is not null && hand.SuitLength((Suit)bid.Denomination) >= 6)
+                return Rule("one-nt-slam-suit", hand, ("couleur", SuitName(bid.Denomination)));
+            if (bid == new Bid(4, Denomination.Diamonds))
+                return Rule("one-nt-major-two-suited", hand, ("zone", "6-9H"));
+            return unknown;
+        }
+
+        if (opening.Seat == call.Seat && ownBids.Count == 1 && ownBids[0] == opening.Bid && partnerBids.Count > 0)
+        {
+            if (partnerLast == new Bid(2, Denomination.Clubs))
+                return bid.Denomination switch
+                {
+                    Denomination.Diamonds => Rule("stayman-no-major", hand),
+                    Denomination.Hearts => Rule("stayman-four-hearts", hand),
+                    Denomination.Spades => Rule("stayman-four-spades", hand),
+                    Denomination.NoTrump => Rule("stayman-both-majors", hand),
+                    _ => unknown
+                };
+            if (partnerLast == new Bid(2, Denomination.Diamonds))
+                return bid == new Bid(2, Denomination.Hearts)
+                    ? Rule("one-nt-texas-rectification", hand, ("couleur", "Cœurs")) : unknown;
+            if (partnerLast == new Bid(2, Denomination.Hearts))
+                return bid == new Bid(2, Denomination.Spades)
+                    ? Rule("one-nt-texas-rectification", hand, ("couleur", "Piques")) : unknown;
+            if (partnerLast == new Bid(2, Denomination.Spades) && bid == new Bid(3, Denomination.Clubs))
+                return Rule("one-nt-texas-rectification", hand, ("couleur", "Trèfles"));
+            if (partnerLast == new Bid(3, Denomination.Clubs) && bid == new Bid(3, Denomination.Diamonds))
+                return Rule("one-nt-texas-rectification", hand, ("couleur", "Carreaux"));
+            if (partnerLast == new Bid(4, Denomination.Diamonds) && bid.Denomination is Denomination.Hearts or Denomination.Spades)
+                return Rule("one-nt-major-game-choice", hand, ("couleur", SuitName(bid.Denomination)));
+        }
+
+        if (opening.Seat != call.Seat && ownBids.Count > 0 && ownBids[0] != opening.Bid && partnerBids.Count > 0)
+        {
+            if (ownLast == new Bid(2, Denomination.Clubs) && partnerLast == new Bid(2, Denomination.NoTrump) &&
+                bid.Denomination is Denomination.Clubs or Denomination.Diamonds)
+                return Rule("stayman-two-nt-transfer", hand, ("couleur", bid.Denomination == Denomination.Clubs ? "Cœurs" : "Piques"));
+            if (ownLast == new Bid(2, Denomination.Clubs) && partnerLast.Denomination is Denomination.Hearts or Denomination.Spades &&
+                bid.Level == 3 && bid.Denomination is Denomination.Hearts or Denomination.Spades)
+                return Rule("stayman-slam-fit", hand, ("couleur", SuitName(bid.Denomination)));
+            if (partnerLast.Denomination is Denomination.Hearts or Denomination.Spades &&
+                bid.Denomination == partnerLast.Denomination && bid.Level == 3)
+                return Rule("texas-major-continuation", hand, ("couleur", SuitName(bid.Denomination)));
+            if (partnerLast.Denomination is Denomination.Clubs or Denomination.Diamonds && bid.Level == 3)
+                return Rule("texas-minor-continuation", hand, ("couleur", SuitName(bid.Denomination)));
+        }
+
+        return null;
+    }
+
+    private static string? ExplainOpening(Bid bid, HandEvaluation? hand)
+    {
+        if (bid.Level == 1 && (bid.Denomination is Denomination.Hearts or Denomination.Spades))
+            return Rule("opening-major", hand,
+                ("couleur", SuitName(bid.Denomination)),
+                ("cartes", hand?.SuitLength((Suit)bid.Denomination).ToString() ?? "5"));
+        if (bid.Level == 1 && (bid.Denomination is Denomination.Clubs or Denomination.Diamonds))
+            return Rule("opening-minor", hand);
+        if (bid == new Bid(1, Denomination.NoTrump))
+            return Rule("opening-1nt", hand);
+        if (bid == new Bid(2, Denomination.NoTrump))
+            return Rule("opening-2nt", hand);
+        if (bid.Level == 2 && (bid.Denomination is Denomination.Hearts or Denomination.Spades))
+            return Rule("weak-two", hand, ("couleur", SuitName(bid.Denomination)));
+        if (bid.Level is 3 or 4)
+            return Rule("preempt", hand, ("couleur", SuitName(bid.Denomination)));
+        return null;
+    }
+
+    private static string ExplainMajorSupport(Bid bid, HandEvaluation? hand)
+    {
+        var fitValues = hand is null ? Array.Empty<(string, string)>() :
+            new[] { ("cartes", hand.SuitLength((Suit)bid.Denomination).ToString()), ("HLD", hand.TotalPoints.ToString()) };
+        return bid.Level switch
+        {
+            2 => Rule("major-support-2", hand, fitValues),
+            3 => Rule("major-support-3", hand, fitValues),
+            4 => Rule("major-support-4", hand, fitValues),
+            _ => Rule("natural", hand)
+        };
+    }
+
+    private static string ExplainMajorChange(Bid bid, HandEvaluation? hand)
+    {
+        var length = hand?.SuitLength((Suit)bid.Denomination).ToString() ?? (bid.Level == 2 ? "5" : "4");
+        return Rule(bid.Level == 2 ? "major-change-2" : "major-change-1", hand, ("cartes", length));
+    }
+
+    private static string ExplainChangeOfColor(Bid bid, HandEvaluation? hand)
+    {
+        if (bid.Denomination is Denomination.Hearts or Denomination.Spades)
+            return Rule(bid.Level == 2 ? "major-change-2" : "major-change-1", hand,
+                ("cartes", hand?.SuitLength((Suit)bid.Denomination).ToString() ?? "4"));
+        if (bid.Denomination is Denomination.Clubs or Denomination.Diamonds)
+            return Rule("minor-change", hand, ("palier", bid.Level.ToString()));
+        return Rule("nt", hand, ("palier", bid.Level.ToString()));
+    }
+
+    private static string Rule(string key, HandEvaluation? hand = null,
+        params (string Key, string Value)[] values)
+    {
+        var replacements = new Dictionary<string, string>
+        {
+            ["H"] = hand?.HighCardPoints.ToString() ?? "?",
+            ["HL"] = hand?.HonorLengthPoints.ToString() ?? "?",
+            ["HLD"] = hand?.TotalPoints.ToString() ?? "?"
+        };
+        foreach (var (name, value) in values) replacements[name] = value;
+        return AuctionTooltipRules.Get(key, replacements);
+    }
+
+    private static string SuitName(Denomination denomination) => denomination switch
+    {
+        Denomination.Spades => "Piques",
+        Denomination.Hearts => "Cœurs",
+        Denomination.Diamonds => "Carreaux",
+        Denomination.Clubs => "Trèfles",
+        _ => "Sans-Atout"
+    };
+
+    private static bool HasAgreedSuit(IReadOnlyList<AuctionCall> calls, Seat seat) =>
+        calls.Where(call => call.Action == AuctionAction.Bid &&
+                call.Seat.IsNorthSouth() == seat.IsNorthSouth() && call.Bid is { })
+            .GroupBy(call => call.Bid!.Value.Denomination)
+            .Any(group => group.Key != Denomination.NoTrump && group.Count() >= 2);
 
     private void CreateBidOptions()
     {
@@ -543,6 +836,7 @@ public partial class MainWindow : Window, INotifyPropertyChanged
     private void RefreshView()
     {
         RefreshHands();
+        UpdateBidOptionRules();
         foreach (var option in BidOptions)
         {
             option.IsEnabled = !_isBusy && _phase == GamePhase.Bidding &&
@@ -559,6 +853,20 @@ public partial class MainWindow : Window, INotifyPropertyChanged
         OnPropertyChanged(nameof(CanDouble));
         OnPropertyChanged(nameof(CanRedouble));
         ActivityList.ScrollIntoView(Activity.LastOrDefault());
+    }
+
+    private void UpdateBidOptionRules()
+    {
+        if (_auction is null || _deal is null)
+        {
+            return;
+        }
+
+        foreach (var option in BidOptions)
+        {
+            var call = new AuctionCall(Seat.North, AuctionAction.Bid, option.Bid);
+            option.Rule = ExplainCallText(call, _auction.Calls, _deal[Seat.North]);
+        }
     }
 
     private void RefreshHands()
@@ -721,11 +1029,12 @@ public partial class MainWindow : Window, INotifyPropertyChanged
 
 public sealed record CardItem(Card? Card, string ImagePath, bool IsPlayable, double Opacity);
 
-public sealed record AuctionItem(string Seat, string Call, Brush Foreground);
+public sealed record AuctionItem(string Seat, string Call, Brush Foreground, string Rule);
 
 public sealed class BidOption : INotifyPropertyChanged
 {
     private bool _isEnabled;
+    private string _rule = string.Empty;
 
     public BidOption(Bid bid, string label, Brush foreground)
     {
@@ -738,6 +1047,20 @@ public sealed class BidOption : INotifyPropertyChanged
     public Bid Bid { get; }
     public string Label { get; }
     public Brush Foreground { get; }
+    public string Rule
+    {
+        get => _rule;
+        set
+        {
+            if (_rule == value)
+            {
+                return;
+            }
+
+            _rule = value;
+            PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(Rule)));
+        }
+    }
     public bool IsEnabled
     {
         get => _isEnabled;

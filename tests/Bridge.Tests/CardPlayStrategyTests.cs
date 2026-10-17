@@ -29,6 +29,51 @@ public sealed class CardPlayStrategyTests
     }
 
     [Fact]
+    public void OpeningLead_NoTrumpWithLongAceKing_UsesFourthBest()
+    {
+        var game = Game(Seat.East, null,
+            Hand(Seat.East, "SA", "SK", "S8", "S4", "S2", "H9"));
+
+        Assert.Equal(Card("S4"), _strategy.ChooseCard(game, Seat.East));
+    }
+
+    [Fact]
+    public void OpeningLead_NoTrumpWithLongAceQueenJack_UsesQueen()
+    {
+        var game = Game(Seat.East, null,
+            Hand(Seat.East, "SA", "SQ", "SJ", "S9", "S7", "S2"));
+
+        Assert.Equal(Card("SQ"), _strategy.ChooseCard(game, Seat.East));
+    }
+
+    [Fact]
+    public void OpeningLead_NoTrumpWithAceJackTen_UsesJack()
+    {
+        var game = Game(Seat.East, null,
+            Hand(Seat.East, "SA", "SJ", "S10", "S4", "H9"));
+
+        Assert.Equal(Card("SJ"), _strategy.ChooseCard(game, Seat.East));
+    }
+
+    [Fact]
+    public void OpeningLead_SuitContractWithAceKingDoubleton_UsesKing()
+    {
+        var game = Game(Seat.East, Suit.Hearts,
+            Hand(Seat.East, "SA", "SK", "D8", "D2", "C7", "C3"));
+
+        Assert.Equal(Card("SK"), _strategy.ChooseCard(game, Seat.East));
+    }
+
+    [Fact]
+    public void OpeningLead_UsesSingletonAgainstSuitContract()
+    {
+        var game = Game(Seat.East, Suit.Hearts,
+            Hand(Seat.East, "S9", "D8", "D3", "C7", "C4", "C2"));
+
+        Assert.Equal(Card("S9"), _strategy.ChooseCard(game, Seat.East));
+    }
+
+    [Fact]
     public void Declarer_LeadsFourthBestFromThePlannedLongestSuit()
     {
         var game = Game(Seat.North, null,
@@ -59,6 +104,50 @@ public sealed class CardPlayStrategyTests
         game.Current.Add(new PlayedCard(Seat.East, Card("S5")));
 
         Assert.Equal(Card("SQ"), _strategy.ChooseCard(game, Seat.South));
+    }
+
+    [Fact]
+    public void Declarer_DirectFinessePlaysSmallTowardAceQueenFork()
+    {
+        var game = Game(Seat.South, null,
+            Hand(Seat.South, "SA", "SQ", "S3"),
+            Hand(Seat.North, "S2"));
+        game.Current.Add(new PlayedCard(Seat.North, Card("S2")));
+
+        Assert.Equal(Card("S3"), _strategy.ChooseCard(game, Seat.South));
+    }
+
+    [Fact]
+    public void Declarer_DirectFinessePlaysSmallTowardKingJackFork()
+    {
+        var game = Game(Seat.South, null,
+            Hand(Seat.South, "SK", "SJ", "S3"),
+            Hand(Seat.North, "S2"));
+        game.Current.Add(new PlayedCard(Seat.North, Card("S2")));
+
+        Assert.Equal(Card("S3"), _strategy.ChooseCard(game, Seat.South));
+    }
+
+    [Fact]
+    public void Declarer_CashesAceWithElevenCardsAgainstMissingKing()
+    {
+        var game = Game(Seat.South, null,
+            Hand(Seat.South, "SA", "SQ", "S3", "S4", "S5", "S6"),
+            Hand(Seat.North, "S7", "S8", "S9", "S10", "S2"));
+        game.Current.Add(new PlayedCard(Seat.North, Card("S2")));
+
+        Assert.Equal(Card("SA"), _strategy.ChooseCard(game, Seat.South));
+    }
+
+    [Fact]
+    public void Declarer_CashesAceKingWithNineCardsAgainstMissingQueen()
+    {
+        var game = Game(Seat.South, null,
+            Hand(Seat.South, "SA", "SK", "S3", "S4", "S5"),
+            Hand(Seat.North, "S6", "S7", "S8", "S9"));
+        game.Current.Add(new PlayedCard(Seat.North, Card("S2")));
+
+        Assert.Equal(Card("SA"), _strategy.ChooseCard(game, Seat.South));
     }
 
     [Fact]
@@ -108,6 +197,17 @@ public sealed class CardPlayStrategyTests
     }
 
     [Fact]
+    public void Declarer_UsesOpeningLeadInformationWhenChoosingNextDevelopmentSuit()
+    {
+        var game = Game(Seat.North, null,
+            Hand(Seat.North, "S4", "S5", "S6", "H2", "H3"),
+            Hand(Seat.South, "S7", "S8", "S9", "HA", "HK"));
+        game.History.Add(new PlayedCard(Seat.East, Card("H10")));
+
+        Assert.Equal(Card("S4"), _strategy.ChooseCard(game, Seat.North));
+    }
+
+    [Fact]
     public void Defender_CoversHonorWithHonor()
     {
         var game = Game(Seat.East, Suit.Spades,
@@ -115,6 +215,16 @@ public sealed class CardPlayStrategyTests
         game.Current.Add(new PlayedCard(Seat.North, Card("HQ")));
 
         Assert.Equal(Card("HK"), _strategy.ChooseCard(game, Seat.East));
+    }
+
+    [Fact]
+    public void Defender_KeepsHonorWhenLongInForcedFinesse()
+    {
+        var game = Game(Seat.East, null,
+            Hand(Seat.East, "HK", "H8", "H5", "H2"));
+        game.Current.Add(new PlayedCard(Seat.North, Card("HQ")));
+
+        Assert.Equal(Card("H2"), _strategy.ChooseCard(game, Seat.East));
     }
 
     [Fact]
@@ -172,12 +282,34 @@ public sealed class CardPlayStrategyTests
     }
 
     [Fact]
-    public void Defender_EncouragesWithHighSpotWhenPartnerWins()
+    public void Defender_SignalsOddParityWhenPartnerWins()
     {
         var game = Game(Seat.West, null,
             Hand(Seat.West, "SQ", "S9", "S3"));
         game.Current.Add(new PlayedCard(Seat.East, Card("SK")));
         game.Current.Add(new PlayedCard(Seat.South, Card("S4")));
+
+        Assert.Equal(Card("S3"), _strategy.ChooseCard(game, Seat.West));
+    }
+
+    [Fact]
+    public void DefenseAtNoTrump_SignalsOddParityWithSmallestCard()
+    {
+        var game = Game(Seat.West, null,
+            Hand(Seat.West, "S9", "S4", "S2"));
+        game.Current.Add(new PlayedCard(Seat.East, Card("SA")));
+        game.Current.Add(new PlayedCard(Seat.South, Card("S3")));
+
+        Assert.Equal(Card("S2"), _strategy.ChooseCard(game, Seat.West));
+    }
+
+    [Fact]
+    public void DefenseAtNoTrump_SignalsEvenParityWithLargestCard()
+    {
+        var game = Game(Seat.West, null,
+            Hand(Seat.West, "S9", "S4"));
+        game.Current.Add(new PlayedCard(Seat.East, Card("SA")));
+        game.Current.Add(new PlayedCard(Seat.South, Card("S3")));
 
         Assert.Equal(Card("S9"), _strategy.ChooseCard(game, Seat.West));
     }
@@ -218,6 +350,18 @@ public sealed class CardPlayStrategyTests
     }
 
     [Fact]
+    public void Declarer_DoesNotWasteLongHandTrumpWhenADiscardIsAvailable()
+    {
+        var game = Game(Seat.North, Suit.Hearts,
+            Hand(Seat.North, "H2", "H3", "H4", "D7"),
+            Hand(Seat.South, "HA", "S2", "S3"));
+        game.Current.Add(new PlayedCard(Seat.East, Card("CA")));
+        game.Current.Add(new PlayedCard(Seat.South, Card("C3")));
+
+        Assert.Equal(Card("D7"), _strategy.ChooseCard(game, Seat.North));
+    }
+
+    [Fact]
     public void OpeningLead_PrioritizesPartnersNaturalSuit()
     {
         var game = Game(Seat.East, null,
@@ -230,7 +374,7 @@ public sealed class CardPlayStrategyTests
             new AuctionCall(Seat.West, AuctionAction.Bid, new Bid(3, Denomination.Diamonds))
         ];
 
-        Assert.Equal(Card("D3"), _strategy.ChooseCard(game, Seat.East));
+        Assert.Equal(Card("D8"), _strategy.ChooseCard(game, Seat.East));
     }
 
     [Fact]
@@ -263,7 +407,7 @@ public sealed class CardPlayStrategyTests
             new AuctionCall(Seat.North, AuctionAction.Bid, new Bid(3, Denomination.Clubs))
         ];
 
-        Assert.Equal(Card("H3"), _strategy.ChooseCard(game, Seat.East));
+        Assert.Equal(Card("H8"), _strategy.ChooseCard(game, Seat.East));
     }
 
     [Fact]

@@ -8,6 +8,189 @@ public sealed class SefMajorOpeningTests
 {
     private readonly SefBiddingEngine _engine = new();
 
+    [Fact]
+    public void Opening_ThirdSeatEightToNineHlWithGoodFiveCardMajor_OpensOneSpade()
+    {
+        var hand = Cards(
+            "SK", "SQ", "S8", "S6", "S3",
+            "H8", "H6",
+            "D8", "D6", "D3",
+            "CA", "C6", "C4");
+        var auction = AuctionWithPassesBefore(Seat.South);
+
+        Assert.Equal(new Bid(1, Denomination.Spades),
+            _engine.DecideBid(Seat.South, hand, auction));
+    }
+
+    [Fact]
+    public void Opening_FourthSeatEightToNineHlWithGoodFiveCardMajor_OpensOneHeart()
+    {
+        var hand = Cards(
+            "HK", "HQ", "H8", "H6", "H3",
+            "S8", "S6",
+            "D8", "D6", "D3",
+            "CA", "C6", "C4");
+        var auction = AuctionWithPassesBefore(Seat.West);
+
+        Assert.Equal(new Bid(1, Denomination.Hearts),
+            _engine.DecideBid(Seat.West, hand, auction));
+    }
+
+    [Fact]
+    public void Opening_FiveFiveMajors_PrefersSpades()
+    {
+        var hand = Cards(
+            "SA", "SK", "S8", "S6", "S3",
+            "HK", "H8", "H6", "H3", "H2",
+            "DQ", "D6", "C4");
+
+        Assert.Equal(new Bid(1, Denomination.Spades),
+            _engine.DecideBid(Seat.North, hand, new Auction()));
+    }
+
+    [Fact]
+    public void Response_FourCardFitElevenToTwelveHld_RaisesToThreeMajor()
+    {
+        var responder = Cards(
+            "SK", "S8", "S4", "S3",
+            "HA", "H6", "H3",
+            "DQ", "D6", "D3",
+            "C8", "C6", "C4");
+        var auction = AuctionWithBids((Seat.North, new Bid(1, Denomination.Spades)));
+
+        Assert.Equal(new Bid(3, Denomination.Spades),
+            _engine.DecideBid(Seat.South, responder, auction));
+    }
+
+    [Fact]
+    public void Response_FourCardFitThirteenToFifteenHldBalanced_BidsThreeNoTrump()
+    {
+        var responder = Cards(
+            "SK", "SQ", "S8", "S3",
+            "HA", "H6", "H3",
+            "DA", "D6", "D3",
+            "C8", "C6", "C4");
+        var auction = AuctionWithBids((Seat.North, new Bid(1, Denomination.Spades)));
+
+        Assert.Equal(new Bid(3, Denomination.NoTrump),
+            _engine.DecideBid(Seat.South, responder, auction));
+    }
+
+    [Fact]
+    public void Response_FourCardFitThirteenToFifteenHldWithSingleton_UsesSplinter()
+    {
+        var responder = Cards(
+            "SK", "SQ", "S8", "S3",
+            "H2",
+            "DA", "D6", "D3", "D2",
+            "CK", "C6", "C4", "C3");
+        var auction = AuctionWithBids((Seat.North, new Bid(1, Denomination.Spades)));
+
+        Assert.Equal(new Bid(4, Denomination.Hearts),
+            _engine.DecideBid(Seat.South, responder, auction));
+    }
+
+    [Fact]
+    public void ThirdSeatMajorOpening_ThreeCardFitElevenHld_UsesDrury()
+    {
+        var responder = Cards(
+            "SK", "S8", "S4",
+            "HA", "H7", "H5",
+            "DQ", "D6", "D3",
+            "CK", "C5", "C3", "C2");
+        var auction = ThirdSeatMajorSequence(new Bid(1, Denomination.Spades));
+
+        Assert.Equal(new Bid(2, Denomination.Clubs),
+            _engine.DecideBid(Seat.North, responder, auction));
+    }
+
+    [Fact]
+    public void ThirdSeatMajorOpening_OpenerWithSixteenToSeventeenHl_AnswersTwoDiamondsToDrury()
+    {
+        var opener = Cards(
+            "SA", "SK", "S8", "S6", "S3",
+            "HA", "HK",
+            "DQ", "D6", "D3",
+            "C8", "C6", "C4");
+        var auction = ThirdSeatMajorSequence(new Bid(1, Denomination.Spades), new Bid(2, Denomination.Clubs));
+
+        Assert.Equal(new Bid(2, Denomination.Diamonds),
+            _engine.DecideBid(Seat.South, opener, auction));
+    }
+
+    [Fact]
+    public void ThirdSeatMajorOpening_AfterDruryTwoDiamonds_FourCardFitRaisesToThree()
+    {
+        var responder = Cards(
+            "SK", "S8", "S4", "S3",
+            "HA", "H7", "H5",
+            "DQ", "D6", "D3",
+            "CQ", "C5", "C2");
+        var auction = ThirdSeatMajorSequence(
+            new Bid(1, Denomination.Spades),
+            new Bid(2, Denomination.Clubs),
+            new Bid(2, Denomination.Diamonds));
+
+        Assert.Equal(new Bid(3, Denomination.Spades),
+            _engine.DecideBid(Seat.North, responder, auction));
+    }
+
+    [Fact]
+    public void ThirdSeatMajorOpening_FourCardFitWithSingletonAndElevenHld_UsesFittedTwoNoTrump()
+    {
+        var responder = Cards(
+            "SK", "S8", "S4", "S3",
+            "H2",
+            "DA", "D6", "D3", "D2",
+            "CQ", "C8", "C6", "C4");
+        var auction = ThirdSeatMajorSequence(new Bid(1, Denomination.Spades));
+
+        Assert.Equal(new Bid(2, Denomination.NoTrump),
+            _engine.DecideBid(Seat.North, responder, auction));
+    }
+
+    [Fact]
+    public void ThirdSeatMajorOpening_SixCardOtherMajorWithEightToTenH_BidsItNonForcing()
+    {
+        var responder = Cards(
+            "HA", "HK", "H8", "H6", "H3", "H2",
+            "S8", "S6",
+            "DQ", "D6",
+            "C8", "C6", "C4");
+        var auction = ThirdSeatMajorSequence(new Bid(1, Denomination.Spades));
+
+        Assert.Equal(new Bid(2, Denomination.Hearts),
+            _engine.DecideBid(Seat.North, responder, auction));
+    }
+
+    [Fact]
+    public void Response_OneSpadeTwoHearts_RequiresFiveHearts()
+    {
+        var responder = Cards(
+            "HK", "H7", "H5", "H3",
+            "S8", "S4",
+            "DA", "D6", "D3", "D2",
+            "CQ", "C5", "C2");
+        var auction = AuctionWithBids((Seat.North, new Bid(1, Denomination.Spades)));
+
+        Assert.NotEqual(new Bid(2, Denomination.Hearts),
+            _engine.DecideBid(Seat.South, responder, auction));
+    }
+
+    [Fact]
+    public void Response_FiveCardFitWithEightToTenH_BidsDirectMajorGame()
+    {
+        var responder = Cards(
+            "SK", "SQ", "S8", "S6", "S3",
+            "HA", "H6", "H3",
+            "D8", "D6",
+            "C8", "C6", "C4");
+        var auction = AuctionWithBids((Seat.North, new Bid(1, Denomination.Spades)));
+
+        Assert.Equal(new Bid(4, Denomination.Spades),
+            _engine.DecideBid(Seat.South, responder, auction));
+    }
+
     // --- Soutiens du répondant (HLD revalorisés) ---
 
     [Fact]
@@ -39,7 +222,7 @@ public sealed class SefMajorOpeningTests
     }
 
     [Fact]
-    public void Response_FourteenHldWithNinthTrump_BidsGame()
+    public void Response_FourteenHldWithNinthTrump_UsesFittedThreeNoTrump()
     {
         // 12H + revalorisation de +2 pour le 9e atout = 14 HLD.
         var responder = Cards(
@@ -49,12 +232,12 @@ public sealed class SefMajorOpeningTests
             "CK", "C5", "C2");
         var auction = AuctionWithBids((Seat.North, new Bid(1, Denomination.Spades)));
 
-        Assert.Equal(new Bid(4, Denomination.Spades),
+        Assert.Equal(new Bid(3, Denomination.NoTrump),
             _engine.DecideBid(Seat.South, responder, auction));
     }
 
     [Fact]
-    public void Response_FourCardFitAndSingleton_UsesSplinter()
+    public void Response_SixteenHldFourCardFit_StartsWithColorChange()
     {
         var responder = Cards(
             "SK", "SQ", "S8", "S4",
@@ -63,8 +246,54 @@ public sealed class SefMajorOpeningTests
             "CQ", "C8", "C5", "C2");
         var auction = AuctionWithBids((Seat.North, new Bid(1, Denomination.Spades)));
 
-        Assert.Equal(new Bid(4, Denomination.Hearts),
+        Assert.Equal(new Bid(2, Denomination.Clubs),
             _engine.DecideBid(Seat.South, responder, auction));
+    }
+
+    [Fact]
+    public void Response_ElevenHldThreeCardFit_UsesFittedTwoNoTrump()
+    {
+        var responder = Cards(
+            "SK", "S8", "S4",
+            "HA", "H7", "H3",
+            "DK", "D6", "D3",
+            "CJ", "C5", "C4", "C2");
+        var auction = AuctionWithBids((Seat.North, new Bid(1, Denomination.Spades)));
+
+        Assert.Equal(new Bid(2, Denomination.NoTrump),
+            _engine.DecideBid(Seat.South, responder, auction));
+    }
+
+    [Fact]
+    public void OpenerRebid_FittedTwoNoTrumpWithMinimum_ReturnsToThreeMajor()
+    {
+        var opener = Cards(
+            "SA", "SQ", "SJ", "S7", "S5",
+            "HK", "H4", "H2",
+            "D9", "D6", "D3",
+            "C8", "C4");
+        var auction = AuctionWithBids(
+            (Seat.North, new Bid(1, Denomination.Spades)),
+            (Seat.South, new Bid(2, Denomination.NoTrump)));
+
+        Assert.Equal(new Bid(3, Denomination.Spades),
+            _engine.DecideBid(Seat.North, opener, auction));
+    }
+
+    [Fact]
+    public void OpenerRebid_FittedTwoNoTrumpWithEighteenBalancedH_BidsThreeNoTrump()
+    {
+        var opener = Cards(
+            "SA", "SK", "SQ", "S7", "S5",
+            "HK", "HQ", "H3",
+            "DA", "D3",
+            "C8", "C4", "C2");
+        var auction = AuctionWithBids(
+            (Seat.North, new Bid(1, Denomination.Spades)),
+            (Seat.South, new Bid(2, Denomination.NoTrump)));
+
+        Assert.Equal(new Bid(3, Denomination.NoTrump),
+            _engine.DecideBid(Seat.North, opener, auction));
     }
 
     // --- Redemandes de l'ouvreur après soutien ---
@@ -187,6 +416,24 @@ public sealed class SefMajorOpeningTests
     }
 
     [Fact]
+    public void ControlBidAtFourLevel_UsesFourNoTrumpToAskForKeycards()
+    {
+        var opener = Cards(
+            "SA", "SQ", "SJ", "S9", "S7",
+            "HK", "H8", "H5", "H2",
+            "DA", "D6", "D3",
+            "C8", "C4");
+        var auction = AuctionWithBids(
+            (Seat.North, new Bid(1, Denomination.Spades)),
+            (Seat.South, new Bid(2, Denomination.Spades)),
+            (Seat.North, new Bid(3, Denomination.Spades)),
+            (Seat.South, new Bid(4, Denomination.Hearts)));
+
+        Assert.Equal(new Bid(4, Denomination.NoTrump),
+            _engine.DecideBid(Seat.North, opener, auction));
+    }
+
+    [Fact]
     public void OpenerRebid_TwentyOneHldAfterThreeLevelRaise_OnlyTriesSlam()
     {
         var opener = Cards(
@@ -217,6 +464,26 @@ public sealed class SefMajorOpeningTests
         }
         var nextPartner = bids[^1].Seat.Partner();
         while (auction.Calls.Count % 4 != (int)nextPartner)
+            auction.AddCall((Seat)(auction.Calls.Count % 4), null);
+        return auction;
+    }
+
+    private static Auction ThirdSeatMajorSequence(params Bid[] bids)
+    {
+        var auction = new Auction();
+        auction.AddCall(Seat.North, null);
+        auction.AddCall(Seat.East, null);
+        auction.AddCall(Seat.South, bids[0]);
+        auction.AddCall(Seat.West, null);
+        for (var index = 1; index < bids.Length; index++)
+            auction.AddCall(index % 2 == 1 ? Seat.North : Seat.South, bids[index]);
+        return auction;
+    }
+
+    private static Auction AuctionWithPassesBefore(Seat seat)
+    {
+        var auction = new Auction();
+        while (auction.Calls.Count % 4 != (int)seat)
             auction.AddCall((Seat)(auction.Calls.Count % 4), null);
         return auction;
     }

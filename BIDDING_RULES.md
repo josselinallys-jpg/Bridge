@@ -23,7 +23,10 @@ Le moteur `SefBiddingEngine` applique le socle du Système d'Enseignement Franç
 | `2♥` / `2♠` | Deux faible : six cartes exactement, belle couleur, 5-10 H, au plus un gros honneur annexe |
 | `2SA` | Main régulière, 20-21 H |
 | `3SA` | Gambling : mineure maîtresse de sept cartes (ARD), rien d'autre qu'au plus une dame annexe |
-| Palier de 3/4 | Barrage : sept cartes au palier 3, huit cartes au palier 4, 5-10 H |
+| Palier de 3/4 | Barrage : sept cartes et 4-10 H au palier 3, huit cartes et 5-10 H au palier 4 |
+
+Les barrages exigent une belle couleur et dénient une majeure annexe quatrième
+ainsi que deux gros honneurs annexes.
 
 À égalité entre deux majeures cinquièmes, le moteur ouvre `1♠`. Entre mineures égales, il ouvre `1♦` avec deux mineures quatrièmes et `1♣` avec deux mineures troisièmes.
 
@@ -38,7 +41,12 @@ Sur un 2 faible :
 
 Sur un barrage au palier 3 en majeure : le fit troisième prolonge à la manche (loi des atouts). `4SA` direct sur un barrage est un Blackwood dans la couleur d'ouverture.
 
-Sur `3SA` gambling : passe du répondant (les corrections `4♣`/`4♦` ne sont pas encore couvertes).
+Après intervention adverse sur un barrage, le contre est punitif. Sur un 2 faible,
+`2SA` reste un relais avec espoir de manche; un changement de couleur est forcing.
+
+Sur `3SA` gambling, `4♣`/`5♣` demandent à l'ouvreur de passer avec les trèfles ou
+de corriger à carreau. `4♦` demande de nommer une courte; l'ouvreur répond `4SA`
+sans singleton ni chicane.
 
 ## Redemandes de l'ouvreur
 
@@ -90,10 +98,13 @@ Après un soutien majeur :
 
 ## Réponses naturelles
 
-- Une réponse à la couleur commence à 6 HL/HLD.
+- Une réponse à la couleur promet quatre cartes : au palier de 1 dès 6 HL ; au palier de 2 sans saut avec 11 H ou 12 HL. Exception : `1♠ - 2♥` promet cinq cœurs.
+- À longueur égale, la couleur cinquième est annoncée avant la quatrième ; parmi les quatrièmes, la couleur la plus économique est choisie ; parmi les cinquièmes, la plus chère est choisie.
+- Un changement de couleur à saut promet six cartes et 18 HL. Un double ou triple saut est un barrage inférieur à une ouverture.
 - Après une ouverture mineure, la couleur la plus longue est annoncée; à longueur égale, la plus économique parmi les quatrièmes et la plus chère parmi les cinquièmes.
 - En zone 6-12 HL, la majeure quatrième est prioritaire sur une mineure même plus longue; il faut 13 HL pour annoncer une mineure avant une majeure.
-- Après une ouverture majeure, un fit de trois cartes permet le soutien direct jusqu'à 12 HLD.
+- Après une ouverture mineure, le soutien promet cinq cartes : `2m` avec 6-9 H, `3m` avec 10-11 H ; à partir de 12 H, commencer par un changement de couleur.
+- Après une ouverture majeure, le soutien promet au moins trois cartes : `2M` avec 6-10 HLD ; `2SA fitté` avec trois atouts et 11-12 HLD ; `3M` avec quatre atouts et 11-12 HLD ; `3SA fitté` avec quatre atouts réguliers et 13-15 HLD ; splinter avec singleton ; changement de couleur à partir de 16 HLD.
 - Les changements de couleur au niveau de 2 nécessitent 13 HL; `2♥` sur `1♠` garantit cinq cœurs.
 - Les réponses à SA et les soutiens de barrage utilisent les zones SEF usuelles.
 
@@ -137,7 +148,7 @@ Redemande de l'ouvreur après soutien (HLD revalorisés) :
 
 ## Stayman
 
-Après `1SA`, `2♣` est un Stayman à partir de 8 H avec une majeure quatrième :
+Après `1SA`, `2♣` est prioritaire à partir de 8 HL avec une majeure quatrième, même avec une majeure cinquième ou une mineure sixième :
 
 | Réponse | Distribution de l'ouvreur |
 |---|---|
@@ -147,6 +158,8 @@ Après `1SA`, `2♣` est un Stayman à partir de 8 H avec une majeure quatrième
 | `2SA` | Les deux majeures quatrièmes |
 
 Après `2SA`, la même structure est décalée d'un palier : `3♣` demande, puis réponses `3♦`, `3♥`, `3♠` ou `3SA`.
+
+Après `1SA - 2♣ - 2SA`, `3♣` et `3♦` sont respectivement des transferts vers les cœurs et les piques. `3♥`/`3♠` montrent un fit et une ambition de chelem. Après `2♥` ou `2♠`, un saut à `4♣`/`4♦` (et `4♥` sur `2♠`) est un splinter; l'autre majeure au palier de 3 est la convention 2012.
 
 Le moteur conclut ensuite à la manche, propose la manche ou joue à SA selon le fit et la force du répondant.
 
@@ -158,15 +171,18 @@ Réponses du répondant :
 
 | Main | Réponse |
 |---|---|
-| 0-7 H régulier | Passe |
-| 8 H sans majeure quatrième | Règle du 8 : `2SA` si plus de huit cartes ≥ 8, sinon passe |
-| 9 H | `2SA` |
-| 10-15 H | `3SA` |
-| 16-17 H | `4SA` quantitatif, l'ouvreur conclut `6SA` avec 17 H |
-| 18+ H | `6SA` |
-| Majeure quatrième, 8+ H | Stayman `2♣` |
+| 0-7 HL sans couleur longue | Passe |
+| 8-9 HL sans majeure quatrième | `2SA` |
+| 10-15 HL | `3SA` |
+| 16-17 HL | `4SA` quantitatif |
+| 18-19 HL | `6SA` |
+| 20-21 HL | `5SA` |
+| 22-25 HL | `7SA` |
+| Majeure quatrième, 8+ HL | Stayman `2♣` |
 | Majeure cinquième | Texas dès 0 point |
-| Mineure sixième, 0-9 H | Texas mineur (`2♠` → trèfles, `3♣` → carreaux) |
+| Mineure sixième, 0-9 HL | Texas mineur (`2♠` → trèfles, `3♣` → carreaux) |
+| Mineure cinquième avec courte ou ambition de chelem | Texas mineur |
+| Saut à `3♦`, `3♥` ou `3♠` | Unicolore sixième avec espoir de chelem |
 | Bicolore majeur 5-4, 0-7 H | Texas sur la couleur cinquième |
 | Bicolore majeur 5-4, 8+ H | Stayman |
 | Bicolore majeur 5-5, 0-5 H | Texas `♥` puis passe |
@@ -177,9 +193,7 @@ Développements après Stayman :
 
 - Réponse `2♦` avec bicolore 5-4 : majeure cinquième au palier de 2 (8-9 H, non forcing, l'ouvreur passe fitté ou revient à `2SA`) ; **chassé-croisé** avec 10+ H : saut à 3 dans la majeure quatrième, l'ouvreur rectifie à la manche avec trois cartes dans l'autre majeure ou revient à `3SA`.
 - Réponse `2M` fittée : soutien `3M` 8-9 H (l'ouvreur conclut avec 17 H), manche directe 10-15 HLD.
-- Sans fit : `2SA` 8-9 H, `3SA` 10-15 H, `4SA` quantitatif 16+ H (l'ouvreur accepte avec 17 H).
-
-Non couvert pour l'instant : rectification Texas au palier de 3 (17 H, quatre atouts), transferts après réponse `2SA` (deux majeures), convention 2012, développements du Texas mineur avec singleton.
+- Sans fit : `2SA` 8-9 HL, `3SA` 10-15 HL, puis les zones quantitatives ci-dessus.
 
 ## Texas
 
@@ -194,26 +208,23 @@ Après `1SA` :
 
 Après `2SA`, les transferts deviennent `3♦`, `3♥`, `3♠` et `4♣`. Les Texas majeurs sur `2SA` sont rectifiés seulement avec trois cartes; sinon l'ouvreur annonce `3SA`.
 
+Après rectification d'un Texas majeur : passe jusqu'à 8 HL, annonces quantitatives selon les zones de réponse directe, répétition à partir de six cartes, splinter avec six cartes et courte en zone 15-17 HLD. Après rectification d'un Texas mineur : `3♥`/`3♠` décrivent une courte, `3SA` une courte dans l'autre mineure sans ambition de chelem, `4SA` une ambition de chelem.
+
+## Intervention sur 1SA
+
+Après une intervention adverse, le contre est d'appel à partir de 8 H lorsqu'aucune description naturelle n'est disponible; le surcontre après un contre est punitif à partir de 10 H. Une couleur au palier de 2 est naturelle et non forcing avec six cartes. Sur `2♣` Landy, `2♥` ou `2♠` annonce la majeure la plus longue quand les deux majeures sont présentes. `2SA` est un transfert Rubensohl, les couleurs à partir de `3♣` sont des transferts successifs et `3♠` demande un arrêt pour jouer `3SA`.
+
+Après un contre du Stayman : surcontre pour jouer, `2♦` avec cinq carreaux, `2♥`/`2♠` avec l'autre majeure, `2SA` avec une main maximale sans majeure, `3♣` avec les deux majeures; passe sinon. Après un contre du Texas : surcontre fitté pour jouer, rectification fittée, passe sans fit.
+
 ## Ouvertures fortes
 
-Sur `2♣` fort indéterminé :
+`2SA` promet 20-21 HL réguliers sans majeure cinquième. Réponses : Stayman `3♣` dès 4 HL, Texas majeur `3♦/3♥`, Texas mineur `3♠/4♣` avec espoir de chelem, `4♦` pour un bicolore majeur 5-5 (l'ouvreur choisit), `4♥/4♠` conclusifs avec six cartes et `3SA` naturel sans fit majeur, `4SA` quantitatif à 12 HL, `5SA` à 16 HL et `6SA` à 13-15 HL. La rectification du Texas majeur promet un fit; sans fit, l'ouvreur revient à `3SA`.
 
-- Le répondant relaie à `2♦` ; l'ouvreur annonce `2SA` avec 22-23 H réguliers (développements Stayman/Texas, passe possible avec moins de 4 HL) ou sa couleur longue.
-- Sur la couleur de l'ouvreur : manche avec fit majeur troisième (`4M`, `3M` avec moins de 4 H), `5m` avec fit et 6+ H, majeure cinquième du répondant, `3SA` avec 5+ H, sinon partielle ou `2SA` d'attente.
+Après `1SA - 2♣ - 2SA`, `3♣/3♦` sont des transferts propositionnels : rectification à 3 ou 4 avec fit, retour à `3SA` sans fit. `4♣/4♦` sont les transferts forcing de manche vers les cœurs et les piques; sans fit, l'ouvreur joue `3SA`.
 
-Sur `2♦` forcing de manche, réponses en As :
+`2♣` est auto-forcing, avec relais obligatoire à `2♦`. À partir de 24 HL ou à une levée de la manche avec deux levées défensives, ouvrir `2♦` forcing de manche. Après le relais `2♦`, `2♥/2♠` décrivent une couleur cinquième ou sixième, `2SA` une main semi-régulière de 22-23 HL, `3M` une majeure septième, et `3SA/4♣/4♦` les bicolores majeurs à trois perdantes. Les réponses distinguent relais forcing, couleurs positives, soutiens d'espoir de chelem et splinters.
 
-| Réponse | Signification |
-|---|---|
-| `2♥` | 0-7 H sans As |
-| `2SA` | 8+ H sans As |
-| `2♠` | Un As majeur |
-| `3♣` / `3♦` | L'As de trèfle / de carreau |
-| `3SA` | Deux As |
-
-Développements : la majeure de l'ouvreur promet cinq cartes solides — le répondant fitté (deux cartes) conclut à la manche, ou donne le fit au palier de trois avec un espoir de chelem (8+ H) ; sans fit, majeure cinquième ou Sans-atout. La redemande à SA de l'ouvreur ouvre les développements Stayman/Texas, le répondant ne passe jamais avant la manche.
-
-Sur `2SA` (20-21 H) : `3SA` dès 4 HL, Stayman et Texas comme sur `1SA` décalés d'un palier, `4SA` quantitatif avec 11-13 H (l'ouvreur conclut `6SA` avec 21 H), `6SA` dès 14 H, passe avec moins de 4 HL.
+Sur `2♦`, les réponses décrivent les As : `2♥` sans As (0-7 H ou 8+ H avec une courte), `2SA` sans As et régulier, `2♠` avec un As majeur, `3♣/3♦` avec l'As correspondant, `3♥/3♠/3SA` pour les groupes de deux As. Les redemandes sont naturelles; `2SA` est la redemande par défaut et les séquences restent forcing jusqu'à la manche.
 
 ## Roudi
 

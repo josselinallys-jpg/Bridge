@@ -50,7 +50,8 @@
         </DataTemplate>
         <DataTemplate x:Key="BidTemplate">
             <Button Tag="{Binding}" Click="Bid_Click" IsEnabled="{Binding IsEnabled}"
-                    Margin="3" Padding="7,8" FontSize="14" Foreground="#17211D">
+                    Margin="3" Padding="7,8" FontSize="14" Foreground="#17211D"
+                    ToolTip="{Binding Rule}">
                 <TextBlock Text="{Binding Label}" Foreground="{Binding Foreground}"
                            FontWeight="SemiBold" FontSize="14" />
             </Button>
@@ -138,9 +139,14 @@
                                         <ColumnDefinition Width="*" />
                                     </Grid.ColumnDefinitions>
                                     <TextBlock Text="{Binding Seat}" Foreground="#64716B" FontSize="12" VerticalAlignment="Center" />
-                                    <Border Grid.Column="1" Background="#E4DCCE" CornerRadius="3" Padding="8,5">
-                                        <TextBlock Text="{Binding Call}" Foreground="{Binding Foreground}"
-                                                   FontWeight="SemiBold" FontSize="14" />
+                                        <Border Grid.Column="1" Background="#E4DCCE" CornerRadius="3" Padding="8,5"
+                                            ToolTip="{Binding Rule}">
+                                        <StackPanel>
+                                            <TextBlock Text="{Binding Call}" Foreground="{Binding Foreground}"
+                                                       FontWeight="SemiBold" FontSize="14" />
+                                            <TextBlock Text="{Binding Rule}" Foreground="#68736E"
+                                                       FontSize="10" TextWrapping="Wrap" Margin="0,2,0,0" />
+                                        </StackPanel>
                                     </Border>
                                 </Grid>
                             </DataTemplate>

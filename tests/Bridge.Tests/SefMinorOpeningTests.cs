@@ -57,7 +57,104 @@ public sealed class SefMinorOpeningTests
             _engine.DecideBid(Seat.North, hand, new Auction()));
     }
 
+    [Fact]
+    public void Response_MinorOpening_BalancedSixToTenHl_BidsOneNoTrump()
+    {
+        var responder = Cards(
+            "SK", "S7", "S3",
+            "HQ", "H7", "H3",
+            "DQ", "D6", "D3",
+            "C8", "C6", "C4", "C2");
+        var auction = AuctionWithBids((Seat.North, new Bid(1, Denomination.Clubs)));
+
+        Assert.Equal(new Bid(1, Denomination.NoTrump),
+            _engine.DecideBid(Seat.South, responder, auction));
+    }
+
+    [Fact]
+    public void Response_MinorOpening_BalancedElevenToTwelveHl_BidsTwoNoTrump()
+    {
+        var responder = Cards(
+            "SK", "SQ", "S3",
+            "HK", "H7", "H3",
+            "DQ", "D6", "D3",
+            "CJ", "C6", "C4", "C2");
+        var auction = AuctionWithBids((Seat.North, new Bid(1, Denomination.Clubs)));
+
+        Assert.Equal(new Bid(2, Denomination.NoTrump),
+            _engine.DecideBid(Seat.South, responder, auction));
+    }
+
+    [Fact]
+    public void Response_MinorOpening_BalancedThirteenToFifteenH_BidsThreeNoTrump()
+    {
+        var responder = Cards(
+            "SA", "SK", "S3",
+            "HK", "H7", "H3",
+            "DQ", "D6", "D3",
+            "CJ", "C6", "C4", "C2");
+        var auction = AuctionWithBids((Seat.North, new Bid(1, Denomination.Clubs)));
+
+        Assert.Equal(new Bid(3, Denomination.NoTrump),
+            _engine.DecideBid(Seat.South, responder, auction));
+    }
+
+    [Fact]
+    public void Response_DiamondOpening_IrregularLongClubsMayBidOneNoTrump()
+    {
+        var responder = Cards(
+            "SK", "S7",
+            "HQ", "H7", "H3",
+            "D6", "D3",
+            "CK", "C8", "C6", "C4", "C2", "C3");
+        var auction = AuctionWithBids((Seat.North, new Bid(1, Denomination.Diamonds)));
+
+        Assert.Equal(new Bid(1, Denomination.NoTrump),
+            _engine.DecideBid(Seat.South, responder, auction));
+    }
+
     // --- Réponses ---
+
+    [Fact]
+    public void ThirdSeatOpening_ChangeOfSuitWithoutRencontre_SameChoiceAsSilence()
+    {
+        var responder = Cards(
+            "HK", "HQ", "H7", "H4",
+            "DQ", "DJ", "D6", "D5", "D2",
+            "S9", "S3", "C8", "C4");
+        var auction = AuctionWithBids((Seat.South, new Bid(1, Denomination.Clubs)));
+
+        Assert.Equal(new Bid(1, Denomination.Hearts),
+            _engine.DecideBid(Seat.North, responder, auction));
+    }
+
+    [Fact]
+    public void ThirdSeatOpening_RencontreFiveCardSuitWithMinorSupport_JumpsNewSuit()
+    {
+        var responder = Cards(
+            "SK", "SQ", "S8", "S6", "S3",
+            "CK", "C8", "C6", "C4",
+            "H8", "H6",
+            "D8", "D6");
+        var auction = AuctionWithBids((Seat.South, new Bid(1, Denomination.Clubs)));
+
+        Assert.Equal(new Bid(2, Denomination.Spades),
+            _engine.DecideBid(Seat.North, responder, auction));
+    }
+
+    [Fact]
+    public void SilenceAdverse_SameRencontreHand_BidsNewSuitWithoutJump()
+    {
+        var responder = Cards(
+            "SK", "SQ", "S8", "S6", "S3",
+            "CK", "C8", "C6", "C4",
+            "H8", "H6",
+            "D8", "D6");
+        var auction = AuctionWithBids((Seat.North, new Bid(1, Denomination.Clubs)));
+
+        Assert.Equal(new Bid(1, Denomination.Spades),
+            _engine.DecideBid(Seat.South, responder, auction));
+    }
 
     [Fact]
     public void Response_WeakZoneFourCardMajorLongerDiamonds_BidsMajor()
@@ -108,6 +205,34 @@ public sealed class SefMinorOpeningTests
         var auction = AuctionWithBids((Seat.North, new Bid(1, Denomination.Clubs)));
 
         Assert.Equal(new Bid(1, Denomination.Spades),
+            _engine.DecideBid(Seat.South, responder, auction));
+    }
+
+    [Fact]
+    public void Response_FourCardMinorSupport_RaisesMinorBeforeBidOneNoTrump()
+    {
+        var responder = Cards(
+            "SA", "S6", "S4",
+            "HK", "H7",
+            "DJ", "D8", "D5", "D4",
+            "C9", "C5", "C2");
+        var auction = AuctionWithBids((Seat.North, new Bid(1, Denomination.Diamonds)));
+
+        Assert.Equal(new Bid(2, Denomination.Diamonds),
+            _engine.DecideBid(Seat.South, responder, auction));
+    }
+
+    [Fact]
+    public void Response_BalancedThirteenPointsAfterMinorOpening_BidsThreeNoTrump()
+    {
+        var responder = Cards(
+            "SA", "S7", "S3",
+            "HK", "H8", "H2",
+            "DA", "DQ", "D3",
+            "CJ", "C9", "C5");
+        var auction = AuctionWithBids((Seat.North, new Bid(1, Denomination.Clubs)));
+
+        Assert.Equal(new Bid(3, Denomination.NoTrump),
             _engine.DecideBid(Seat.South, responder, auction));
     }
 

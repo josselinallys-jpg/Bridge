@@ -1,0 +1,378 @@
+1- Classification et évaluation des mains - Loi des atouts
+** Types de mains
+*Mains régulières : pas de chicane, pas de singleton et au maximum un doubleton (4-3-3-3,4-4-3-2,5-3-3-2)
+*Mains unicolores : une couleur au moins 6em pas d'autre couleur au moins 4em (6-3-2-2,6-3-3-1,7-3-2-1,...)
+*Mains bicolores : une couleur au moins cinquième et une seule autre couleur au moins quatrième (5-4-2-2,5-4-3-1,6-4-2-1,...)
+** Modes d'évaluation des mains
+point H (honneur) : As=4H K=3H Q=2H J=1H
+point L (longueur): 1 points pour la cinquième carte et suivante
+point D (distribution : seulement après la découverte d'un FIT : chicane=3D, Singleton=2D, Doubleton=1D, neuvième atout=2D, A partir 10em atout +1D
+
+2- ouvertures mineures
+l'ouverture mineur promet 3 cartes et de 12H ou 13HL à 23HL
+**Règle d'ouverture
+- ouvrir de la mineure la plus longue
+- 3C-3D ouvrir 1C
+- 4C-4D ouvrir 1D
+**Réponse dans le silence adverse
+* les changements de couleur
+-Nommer une nouvelle couleur sans saut promet au moins quatre cartes. Au palier 1 l'enchère est forcing et promet 6HL ou plus. Au palier 2 sans saut est autoforcing et promet 11H (ou 12HL) ou plus, 1 séquence concerné : 1D-2C.
+Lorsque plusieurs couleurs remplissent ce critère : Nommer la couleur la plus longue, balayer les couleurs de quatre cartes, nommer la plus chère des couleurs de cinq cartes
+-Répondre une couleur à simple saut : promet un très bel unicolore de 18HL et plus
+-répondre une couleur à double ou triple saut : est un barrage plus faible qu'à l'ouverture
+* les enchères naturelles à sans atout
+promet un jeu régulier (sauf 1SA sur 1D qui peut cacher une main irrégulière avec trèfle long) et dénient une majeure quatrième
+- 6-10HL, 1SA
+- 11-2HL, 2SA
+- 13-15H, 3SA
+*Les soutiens
+Le soutien de la mineur promet cinq cartes (parfois quarte cartes à carreau). Préférer sans atout si la main est régulière
+6-8H, 2C ou 2D
+9-11H, 3C ou 3D
+12H ou plus, commencer par un changement de couleur, en nommant exceptionnellement l'autre mineure sans autre couleur quatrième que celle d'ouverture
+**Les réponses dans le silence adverse après Passe
+Les deux seules modifications concernent les changements de couleur, en nommant exceptionnellement l'autre mineure.
+- sans saut -> non forcing
+- A saut -> rencontre avec cinq belles cartes dans la couleur donnée, au moins quatre carte dans la mineure d'ouverture et 8-11H
+**Les réponses après un contre d'appel
+* les changement de couleur
+-changement de couleur en 1 sur 1 : quatre cartes minimum et 7HL, forcing
+-changement de couleur en 2 sur 1 : six cartes minimum et 7-10H, non forcing
+-changement de couleur à saut : barrage naturel comportant un nombre de cartes identique à l'ouverture de barrage correspondante mais de force inférieure
+* enchères naturelles à SA
+1SA est positive montrant une main régulière et 8-10HL
+* Le surcontre
+10H et 10H sans possibilité de nommer une couleur cinquième au palier 1
+* les soutiens
+soutien à saut devient barrage fondé sur la lois des atouts avec au moins 7-8H
+l'enchère 2SA (Truscott) 9H et cinq atouts ou plus
+** Les réponses après une interventions à la couleur
+* les changement de couleur
+-changement de couleur en 1 sur 1 : quatre quatre minimum et 7HL, forcing
+-changement de couleur en 2 sur 1 : cinq cartes minimum et 11HL, non forcing
+-changement de couleur à saut : barrage naturel comportant un nombre de cartes identique à l'ouveture de barrage correspondante mais de force inférieure
+* les enchères naturelles à sans atout
+promet un jeu régulier (sauf 1SA sur 1D qui peut cacher une main irrégulière avec trèfle long) et dénient une majeure quatrième. Promet un arrêt dans la couleur adverse
+- 8-10HL, 1SA
+- 11-2HL, 2SA
+- 13-15H, 3SA
+* soutiens
+Pas de changement de signification
+*Contre :
+- palier 1 : 4 cœurs et 8HL ou 5 cœurs et 8-10H
+- palier 2 : 8HL et pas d'autres options
+- palier 3 : 11HL et pas d'autres options
+cuebid :
+forcing de manche (au moins 13HL) dénie une majeur quatrième non nommée
+**Réponse après une intervention par 1SA
+* contre : punitif 9H et plus
+* 2C : bicolore majeur 5-4, sur 2D répondre la majeur la plus longue
+* soutien simple : inchangé
+* soutien à saut : barrage naturel comportant un nombre de cartes identique à l'ouverture de barrage correspondante mais de force inférieure
+* 2SA : cuebid promettant 5 atouts et au moins 13HLD
+* changement de couleur sans saut : non forcing et 6 cartes
+* changement de couleur avec saut : barrage
+**Réponse après une intervention bicolore
+* soutien simple 8-10HLD
+* annonce de la dernière couleur : non forcing au moins 6 cartes et 8-10H
+* enchère à SA : naturelles
+* cuebid le plus économique : soutien forcing de manche
+* cuebid le moins économique : cinq cartes dans la dernière couleur forcing de manche
+* contre : appel 10HL au moins
+* pass suivi de contre : punitif
+
+3- ouvertures majeures
+**Règle d'ouverture
+- ouvrir de la majeure la plus longue avec un minimum de cinq cartes
+- 12H ou 13HL jusqu'à 22HL
+- si le partenaire a passé d'entré, ouvrir à 8-9HL si la couleur est belle en particulier à vulnérabilité favorable
+**Réponse dans le silence adverse
+*Les soutiens
+Le soutien de la majeur promet au moins trois cartes.
+6-10HLD, 2H ou 2S
+11-12HLD, si trois atout : 2SA (2SA fitté) ; si quatre atouts soutenir à saut à 3H ou 3S
+13-15HLD, si trois atout commencer par un changement de couleur puis soutenir à la manche ; avec quatre atout et jeu régulier : répondre 3SA ; avec 4 atouts et singleton ou chicane : splinter.
+16HLD : changer de couleur puis soutenir en majeur au palier 3 pour envisager le chelem.
+soutien direct à la manche (4H ou 4S) : barrage 8H fit de 10 cartes
+Sur 2SA fitté, réponse obligatoire : retour à 3 dans la majeur d'ouverture : ouverture minimal refus de la manche ; nomme 4 cartes dans l'autre majeure pour rechercher meilleur manche ou espoir de chelem ; nomme la manche à sans atout avec jeu régulier à honneurs répartis ; saute directement à la manche en majeure sans ambition de chelem.
+* les changements de couleur
+-Nommer une nouvelle couleur sans saut promet au moins quatre cartes. Au palier 1 l'enchère est forcing et promet 6HL ou plus. Au palier 2 sans saut est autoforcing et promet 11H (ou 12HL) ou plus. 1S-2H promet 5 cartes
+Lorsque plusieurs couleurs remplissent ce critère : Nommer la couleur la plus longue, balayer les couleurs de quatre cartes, nommer la plus chère des couleurs de cinq cartes
+-Répondre une couleur à simple saut : promet un très bel unicolore de 18HL et plus
+-répondre une couleur à double ou triple saut : est un barrage plus faible qu'à l'ouverture
+* les enchères naturelles à sans atout
+1SA "poubelle" enchère par défaut 6-10HL sans couleur à annoncer. Peut se faire avec jeu irrégulier
+**Les réponses dans le silence adverse après Passe
+*Les soutiens
+l'ouverture pouvant être plus faible quelques changements :
+- palier 2 inchangés (6-10HLD)
+- palier 3 : barrage avec jeux irréguliers et 4 atouts
+- palier 4 : barrage avec 5 atouts et 8H
+- 2SA 11HLD fit 4 cartes et un singleton ou chicane. Cette courte peut être demandé après un relai 3C. Elle est répondu naturellement un retour à 3 dans la majeurs indiquant la courte à trefle. En conséquence les splinters montrent 5 atouts
+- 2C drury fitté. 3 atouts et un minimum de 11HLD. 4 atouts et 11HLD sans singleton ni chicane. Réponse : 2 dans la majeur : ouverture faible pour s'arreter : 2D ambigue espoir de manche. 3 dans la majeures : espoir de chelem. 4 dans la majeure : conclusion. Autres : enchère naturelle promettant 12H. Après 2D avec 3 atouts revenir à 2 dans la majeures avec 4 atouts sauter à 3 dans la majeures.
+* les changements de couleur
+Nouvel couleur sans saut est non forcing et dénie le fit dans la couleur d'ouverture. Au palier 2 elle promet 6 cartes (ou cinq très faible) et 8-10H.
+Nouvel couleur avec saut = enchère de rencontre : 4 aouts, 5 cartes dans la couleur nommée 8-11H.
+* les enchères naturelles à sans atout
+1SA "poubelle" enchère par défaut 6-11HL sans couleur à annoncer. Peut se faire avec jeu irrégulier
+**Les réponses après un contre d'appel
+*Les soutiens
+Le soutien de la majeur promet au moins trois cartes.
+6-10HLD, 2H ou 2S
+11-12HLD, si trois atout : surcontre ; si quatre atouts : 2SA Truscott
+13-15HLD, si trois atout commencer par un changement de couleur puis soutenir à la manche ; avec quatre atout et jeu régulier : répondre 3SA ; avec 4 atouts et singleton ou chicane : splinter.
+16HLD : changer de couleur puis soutenir en majeur au palier 3 pour envisager le chelem.
+soutien direct à la manche (4H ou 4S) : barrage 8H fit de 10 cartes
+soutien au palier 3 = barrage fit de 9 cartes
+* les changement de couleur
+-changement de couleur en 1 sur 1 : quatre cartes minimum et 6HL, forcing
+-changement de couleur en 2 sur 1 : six cartes minimum (ou cinq belles) et 8-10H, non forcing. Dénie le fit
+-changement de couleur à saut : rencontre 11HLD quatre atouts et cinq cartes dans la couleur nommée
+* enchères naturelles à SA
+1SA est positive montrant une main régulière et 8-10HL
+** Les réponses après une interventions à la couleur
+*Les soutiens
+Le soutien de la majeur promet au moins trois cartes.
+6-10HLD, 2H ou 2S
+11-12HLD, si trois atout : 2SA (2SA fitté) ; si quatre atouts soutenir à saut à 3H ou 3S
+13-15HLD, si trois atout : 2SA (2SA fitté) ; avec quatre atout et jeu régulier : répondre 3SA ; avec 4 atouts et singleton ou chicane : splinter.
+16HLD : changer de couleur puis soutenir en majeur au palier 3 pour envisager le chelem.
+soutien direct à la manche (4H ou 4S) : barrage 8H fit de 10 cartes
+saut dans la couleure d'intervention = Slinter
+cuebid : forcing de manche avec 4 atouts
+Sur 2SA fitté, réponse obligatoire : retour à 3 dans la majeur d'ouverture : ouverture minimal refus de la manche ; nomme 4 cartes dans l'autre majeure pour rechercher meilleur manche ou espoir de chelem ; nomme la manche à sans atout avec jeu régulier à honneurs répartis ; saute directement à la manche en majeure sans ambition de chelem.
+* les changements de couleur
+-Nommer une nouvelle couleur sans saut promet au moins quatre cartes. Au palier 1 l'enchère est forcing et promet 6HL ou plus. Au palier 2 sans saut est forcing et promet 11H (ou 12HL) ou plus. 1S-2H promet 5 cartes
+Lorsque plusieurs couleurs remplissent ce critère : Nommer la couleur la plus longue, balayer les couleurs de quatre cartes, nommer la plus chère des couleurs de cinq cartes
+-Répondre une couleur à simple saut : barrage naturel
+* les enchères naturelles à sans atout
+1SA "poubelle" enchère par défaut 6-10HL sans couleur à annoncer. Peut se faire avec jeu irrégulier. Promet un arrêt dans la couleur adverse
+* Contre (sputnik généralisé) : dénit un fit promet 8HL après une intervention au palier 1 et 10HL aux paliers supérieurs.
+**Réponse après une intervention par 1SA
+* contre : punitif 9H et plus
+* soutien simple : inchangé
+* soutien à saut : barrage naturel comportant un nombre de cartes identique à l'ouverture de barrage correspondante mais de force inférieure
+* 2SA : cuebid promettant 4 atouts et au moins 11HLD
+* changement de couleur sans saut : non forcing et 6 cartes
+* changement de couleur avec saut : rencontre 11HLD quatre atouts et cinq cartes dans la couleur nommée
+**Réponse après une intervention bicolore
+* soutien simple 8-10HLD
+* annonce de la dernière couleur : non forcing au moins 6 cartes et 8-10H
+* enchère à 2SA : 3 atouts et 11-12HLD
+* 3 SA : naturelle
+* cuebid le plus économique : soutien dans la majeure, 13HLD
+* cuebid le moins économique : cinq cartes dans la dernière couleur forcing de manche
+* contre : appel 10HL au moins
+* cuebid à saut : slinters
+* dernière couleure à saut : enchère de rencontre
+* pass suivi de contre : punitif
+
+4- ouverture 1SA
+15H-17h Regulier ou 15-16H et :
+   * 5-4-2-2 mineur cinquième et quatre cœur ou quatre carreau
+   * 6-3-2-2 mineur sixième avec honneur dans les couleurs courtes
+   * 5-3-3-2 avec majeur cinquième
+
+** Développements dans le silence adverse
+* Passe et réponse à Sans Atout
+0-7HL sans couleur longue (cinq cartes en majeur ou six en mineur) -> Pass
+8-9HL -> 2SA proposition de manche
+10-15HL -> 3SA
+16-17HL -> 4SA proposition de petit chelem
+20-21HL -> 5SA proposition de grand chelem
+18-19HL -> 6SA
+22-25HL -> 7SA
+
+* Le 2C stayman
+artificiel promet 8HL quatre cartes en majeur et demande au partenaire ses majeurs quatrièmes. Elle est prioritaire sur toutes les autres encheres même avec l'autre majeur cinquième ou une mineur sixième
+- Réponses :
+2D : Pas de majeur quatrième
+2H : quatre cœurs et pas quatre piques
+2S : quatre piques et pas quatre cœurs
+2SA : quatre cœurs et quatre piques
+
+- Développements après la réponse
+	- Sur 2H ou 2S, soutiens majeurs naturels et non forcing. Idem pour les réponse à SA qui ont la même valeur qu'en réponse directe à l'ouverture
+	- Sur 2D,2H,2S, 3C et 3D montrent cinq cartes au moins dans la couleur et sont forcing de manche. Pas de fit majeur. Promet une chicane ou un singleton ou une force suffisante pour chelem
+	- misères dorées : 2H ou 2S montrent 7-8H irrégulier et cinq cartes dans la majeure nommée
+	- Après 2D : 3H et 3S est la convention chassé-croisé promet 4 cartes dans la majeure nommée et cinq dans l'autre majeure
+	- Après 2SA : 3C et 3D sont des transferts propositionnels avec un fit respectivement à cœur et à pique. L'ouvreur rectifie à 3 ou 4 selon sa force; sans fit, il revient à 3SA.
+	- Après 2SA : 4C et 4D sont des transferts forcing de manche vers les cœurs et les piques. L'ouvreur rectifie à la manche avec un fit; sans fit, il joue 3SA.
+	- Après 2SA : 3H et 3S indique un fit dans la couleur nommée et une ambition de chelem
+	- Après 2H ou 2S : un saut à 4 en mineur ou (4H sur 2S) est splinter. Promet un fit dans la majeur de l'ouvreur, une courte dans la couleur nommée (singleton ou chicane) et 15-17HLD
+	- Après 2H ou 2S: convention 2012, 3 dans l'autre majeure est une enchère artificielle qui montre le fit dans la majeur de l'ouvreur et une ambition de chelem
+
+*Les texas 2D et 2H
+promet cinq cartes respectivement à cœur et à pique. La rectification de l'ouvreur est obligatoire à 2H ou 2S. (Avec quatre ou cinq cartes dans la majeure du répondant, l'ouvreur rectifiera le texas avec un saut)
+- Réponses à la rectification simple :
+	- Jusqu'à 8HL -> Pass
+	- Annoncer les sans atout selon les valeurs indiqués en réponse directe à l'ouverture 1SA
+	- Répéter sa majeure avec 6 cartes et plus
+	- Faire un splinter avec six cartes dans la majeur, 15-17HLD en nommant un singleton ou sa chicane à saut
+	- nommer un mineure avec quatre et un singleton annexe ou espoir de chelem
+
+* Les bicolores majeurs :
+- sans espoir de manche : 1SA - 2H - 2S - PASS
+- espoir de manche : 1SA - 2D - 2H - 2S
+- Certitude de manche : 1SA - 4D - (conclusion à 4H ou 4S)
+- Espoir de chelem : 1SA - 2H - 2S - 3H
+
+* Les texas mineur 2S et 3C
+La rectification de l'ouvreur est obligatoire à 3C ou 3D.
+S'emploient à partir de
+- six cartes sans espoir de manche
+- cinq cartes ou plus et un singleton ou chicane, sans majeure quatrième, sans espoir de chelem
+- cinq cartes ou plus sans majeur quatrième avec une main de chelem, éventuellement une courte
+Face à la rectification de l'ouvreur le répondant
+- décris sa courte naturellement à 3H ou 3S
+- 3SA pour courte dans l'autre mineur sans ambition de chelem
+- 4SA si ambition de chelem
+- bicolore mineur : 1SA - 2S - 3C - 3D
+
+* Réponses à saut à la couleur
+3D, 3H et 3S promet un unicolore de six cartes et espoir de chelem
+
+
+** Développements après l'intervention du n°2 : le rubensohl
+- Une couleur de palier 2 est non forcing
+- Les enchères 2SA à 3H sont texas
+- Le texas pour la couleur adverse et le stayman
+- 3S est une demande d'arret pour jouer 3SA
+- Le contre est d'appel
+
+Après contre :
+- enchérir comme si le joueur avait passé. surcontre est punitif
+
+Après 2C (Landy)
+- 2H et 2S sont cubid demandant un arrêt dans la couleur nommé avec espoir de manche
+- à partir de 2SA : enchère texas.
+- Contre est punitif
+
+** Développements après l'intervention du n°4
+* Après un contre du stayman
+- surcontre : pour les jouer
+- 2D : cinq cartes à carreau
+- 2H/2S : quatre ou cinq cartes dans l'autre majeure
+- 2SA : main maximale sans majeure, double arrêt à trefle
+- 3C : les deux majeures quatrièmes
+- Pass : rien de ce qui précède
+
+* Après un contre du texas
+- surcontre : fitté pour faire jouer le partenaire
+- rectification du texas : fitté pour jouer soi-même
+- pass : non fitté
+
+* Après une intervention à la couleur
+- le contre est punitif
+
+5- Les ouvertures de barrage
+Ouverture supérieure ou égale à 2H (sauf 2SA). Elles montrent une belle couleur d'autant plus longue que le palier est élevé et une valeur inférieure à l'ouverture au palier 1
+Une ouverture de barrage dénie deux gros honneurs dans une couleur annese ainsi que quatres cartes dans une majeure ou l'autre majeure en cas de barrage en majeur
+
+**2H et 2S : les 2 majeurs faibles
+-exactement 6 belles cartes et un jeu faible (5-10H)
+*Développements dans le silence adverse
+- soutient simple : conforme à la loi des atouts dénie tout espoir de manche (prolongement du barrage)
+- soutient au palier 4 : soit conforme à la loi des atouts soit volonté de jouer la manche pour gagner
+- changements de couleur : promet cinq cartes en majeur ou six en mineur. forcing
+- 3SA : conclusion
+- 2SA : relais qui promet un espoir de manche. Avec un jeu minimal, l'ouvreur répète au palier 3. Avec un jeu maximal, annonce un gros honneur par une nouvelle couleure au palier 3, une courte au palier 4, 3SA avec les autres mains
+*Développements après une intervention du n°2 à la couleure
+- contre punitif
+- changement de couleur naturel et forcing un tour
+- Si disponible 2SA est inchangée
+
+**barrage au palier 3
+Montre 7 belles cartes et un jeu faible (4-10H)
+*Développements dans le silence adverse
+-Les soutiens : conclusifs en conformité avec la loi des atouts ou expriment l'espoir de gagner la manche ou le chelem déclaré
+-Les changements de couleur sans saut : naturels et forcing au palier 3. L'ouvreur soutiendra une majeure avec deux cartes et ne dépassera pas 3SA sinon. Une nouvelle couleur au palier 4 est un control agréant le fit
+-3SA est une enchère naturelle, fondée sur un petit fit et l'espoir de tirer parti de la couleur longue
+-4SA est un blackwood 5 clés
+*Développements après intervention du n°2 : contre punitif
+
+**barrage au palier 4
+4D et 4C mineure non maitresse de 8 cartes et un jeu faible 5-10H
+4H et 4S montrent 8 cartes et 5-10H. Une main plus forte est possible si le partenaire a passé au préalable
+-Developpement dans le silence adverse :
+4SA est un blackwood 5 clefs
+4H et 4S sont des conclusions
+
+**l'ouverture de 3SA
+montre une mineure maitresse de 7 cartes et au pplus une dame annexe
+-Developpement dans le silence adverse :
+pass si meilleur contrat
+4C ou 5C demande de passer ou de corriger à carreau
+4D forcing demande de nommer la courte (4C = courte en mineure, 4SA = absence de courte)
+4H et 4S = arrets formels
+
+
+6- Les ouvertures fortes : 2C, 2D et 2SA
+** 2SA
+naturelle promet 20-21HL régulier sans majeure cinquième
+réponses :
+-3C : stayman, 4+HL
+-3D/H : Texas coeur/pique
+-3S/4C : Texas trèfle/carreau avec espoir de chelem
+-4D : 5+H/5+S, l'ouvreur choisit la majeure
+-4H/4S : conclusion pour jouer, avec six cartes ou plus
+-3SA : conclusion naturelle avec une main régulière sans fit majeur
+4SA : 12HL réguliers proposition de petit chelem
+5SA : 16HL réguliers proposition de grand chelem
+6SA : 13-15HL réguliers
+* rectification d'un texas majeure promet un fit et celle d'un texas mineur au moins un honneur troisème sinon l'ouvreur revient à SA. S'il n'a que cinq cartes en majeur, le répondant doit avoir assez de points pour assumer la manche
+* Après stayman, les réponses sont décalées vers le bas par rapport à l'ouverture 1SA. Les conventions chassés-croisé, transfert et convention 2022 sont applicables
+* L'annonce d'une nouvelle couleur au palier 4 après un stayman dénie le fit et montre une ambition de chelem (sauf pour la convention 2022)
+
+** 2C : 2 fort indéterminée
+Auto forcing, réponse obliigatoire : 2D
+2C - 2D - 2H/2S : Soit six cartes et 8-8.5 levées dont deux de défense soit cinq cartes et 21-23HL
+2C - 2D - 2SA : 22-23HL main semi-régulière, majeure cinquième possible
+2C - 2D - 3X : sept cartes et 8-8.5 levées en majeure ou 8.5-9.5 levées en mineure
+2C - 2D - 3SA : 5H-5S, bicolore de 3 perdantes
+2C - 2D - 4C : 6H-5S, bicolore de 3 perdantes
+2C - 2D - 4D : 6S-5H, bicolore de 3 perdantes
+* réponse sur 2H/2S
+-2SA est forcing à partir de 5H
+-nouvelle couleur au palier 3 montre cinq cartes correctes et au moins 7HL
+-soutien au palier 3 montre un espoir de chelem
+-couleurs à saut : splinter (singleton ou chicane dans la couleure nommée et 4 quatres dans la couleure de l'ouvreur)
+-saut à la manche dans la couleure de l'ouvreur : conclusion
+* réponse sur 2SA
+Idem que sur ouverture 2SA en décalant d'un ou deux points les zones vers le ResponderRebid_AfterSimpleRaiseWithThirteenHld_BidsGame
+* réponse en face 3C/3D
+-nouvelles couleurs au palier 3 : force dans la couleur (pas forcément longue)
+-fit au palier 4 : montre un espoir de chelem
+* réponse en face 3H/3S
+-nouvelles couleurs : control avec fit implicite dans la couleur du partenaire
+-fit au palier 4 : conclusion
+* défense après une intervention du n°2
+- contre et surcontre: au moins 5H sans bonne enchère naturelle
+- une couleur : au moins cinq cartes et au moins 5H
+* défense après une intervention du n°4
+- contre et surcontre: punitif (souvent main régulière)
+- pass : forcing montre un défaut d'arrêt pour jouer à 3SA
+- couleurs : naturelles
+
+** 2D : forcing de manche
+Toutes les mains de 24HL ou permettant la manche à une levée près (9 avec une majeure longue ou 10 avec une mineure longue à condition d'avoir 2 levées de défense)
+2D - 2H : pas d'AS, 0-7H ou 8+H avec une courte
+2D - 2S : AS de coeur ou AS de pique
+2SA : pas d'AS, 8H et plus au moins deux cartes par couleur
+2D - 3C/3D : AS de trèfle/ AS de carreau
+3H : deux as de même couleur (C/S ou D/H)
+3S : deux as de même rang (C/D ou H/S)
+3SA : deux as mélangé (C/H ou D/S)
+Les redemandes sans saut sont naturelles et indique cinq cartes au palier 2. Au palier 3, elles promettent six cartes ou cinq belles cartes et une main irrégulière.
+2SA est une redemande par défaut, souvent avec un jeu régulier
+Les sauts à la manche ou au chelem sont des conclusions formelles
+* En face d'une redemande à la couleur
+- 2SA est une enchère du répondant par défaut
+- nouvelle couleur montre cinq cartes correctes et une main positive
+- Le soutien sous le palier de la manche montre un espoir de chelem
+- Les couleurs à saut sont des splinters (singleton ou chicane dans la couleure nommée, au moins quatre cartes dans la couleur de l'ouvreur)
+- saut à la manche dans la couleur du partenaire montre un bon fit sans valeur extérieure
+* Après une redemande à SA
+Voir l'ouverture 2SA. Seule différence, pas de minimum sur texas et stayman
+* Après une intervention.
+Plus de réponse à l'AS

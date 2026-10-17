@@ -67,9 +67,22 @@ SefBiddingEngine : ICompetitiveBiddingStrategy
 ```csharp
 AdvancedCardPlayAi : ICardPlayStrategy
 ├── ChooseCard(game, seat) → Card
+├── CardPlayPlan : levées requises, levées sûres, couleur à développer, coupe utile
+├── CardKnowledge : cartes vues, chicanes révélées, longueurs minimales annoncées
 ├── ChooseLead(...) → Card (séquence d'enchères, contrat et distribution)
 ├── ChooseFollow(...) → Card (impasse, Bath, honneur sur honneur, 3e main)
 └── Signalisation, déblocage, coupe et défausse
+
+ContractAwareCardPlayAi : ICardPlayStrategy
+├── DeclarerNoTrumpCardPlayAi
+├── DeclarerSuitCardPlayAi
+├── DefenseNoTrumpCardPlayAi
+└── DefenseSuitCardPlayAi
+
+Le routeur sélectionne l'une des quatre stratégies selon le camp du joueur et
+la présence ou non d'un atout. Les quatre stratégies partagent actuellement les
+heuristiques sûres d'`AdvancedCardPlayAi`, mais leur séparation permet d'ajouter
+des règles spécifiques sans mélanger le jeu du déclarant et celui de la défense.
 
 SimpleCardPlayAi : ICardPlayStrategy
 └── ChooseCard(game, seat) → Card (bas d'abord, suit si possible)
@@ -78,6 +91,13 @@ SimpleCardPlayAi : ICardPlayStrategy
 **Stratégies** :
 - **Advanced** : historique des enchères et plis, entame raisonnée, jeu du déclarant et défense coopérative
 - **Simple** : Joue petit, suit la couleur
+
+Le plan de jeu est recalculé à chaque décision. Il compare les levées sûres aux
+levées requises, choisit une couleur de développement en tenant compte des
+communications avec le mort et évite de tirer les atouts ou de couper depuis la
+main longue sans nécessité. `CardKnowledge` reconstruit prudemment les contraintes
+des mains adverses et partenaires à partir des enchères naturelles, des cartes vues
+et des chicanes révélées par les plis.
 
 **Concepts de jeu couverts** :
 - Déclarant : plan de couleur longue, affranchissement, impasse, laisser-passer,
