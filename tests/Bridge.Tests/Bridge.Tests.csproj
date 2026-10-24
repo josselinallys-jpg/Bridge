@@ -18,6 +18,9 @@
 
   <ItemGroup>
     <Using Include="Xunit" />
+    <Compile Include="..\..\src\Bridge.Desktop\AuctionTooltipRules.cs" Link="Desktop\AuctionTooltipRules.cs" />
+    <None Include="..\..\bidding-profile.json" Link="bidding-profile.json" CopyToOutputDirectory="PreserveNewest" />
+    <None Include="..\..\sef-bidding-profile.json" Link="sef-bidding-profile.json" CopyToOutputDirectory="PreserveNewest" />
   </ItemGroup>
 
   <ItemGroup>

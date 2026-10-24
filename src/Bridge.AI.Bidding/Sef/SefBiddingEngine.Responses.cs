@@ -5,7 +5,7 @@ using Bridge.Core.Models;
 /// <summary>Chapitre SEF : première enchère du répondant.</summary>
 public sealed partial class SefBiddingEngine
 {
-    private static Bid? FirstResponse(HandEvaluation hand, Bid opening, Auction auction) => opening switch
+    private Bid? FirstResponse(HandEvaluation hand, Bid opening, Auction auction) => opening switch
     {
         { Level: 1, Denomination: Denomination.NoTrump } => RespondToOneNoTrump(hand),
         { Level: 2, Denomination: Denomination.NoTrump } => RespondToTwoNoTrump(hand),
@@ -73,61 +73,104 @@ public sealed partial class SefBiddingEngine
         return null;
     }
 
-    private static Bid? RespondToOneNoTrump(HandEvaluation hand)
+    private Bid? RespondToOneNoTrump(HandEvaluation hand)
     {
         var h = hand.HighCardPoints;
         var hl = hand.HonorLengthPoints;
         // Le Stayman est prioritaire dès 8HL, même avec une majeure cinquième ou une mineure sixième.
-        if (hand.HasFourCardMajor && hl >= 8) return new(2, Denomination.Clubs);
+        if (Profile.Conventions.Stayman && hand.HasFourCardMajor && hl >= Profile.Conventions.StaymanMinimumHL)
+            return new(2, Denomination.Clubs);
         // Bicolore majeur 5-5 : Texas ♥ faible, 4♦ conventionnel en zone de manche, Texas ♠ ensuite.
-        if (hand.SuitLength(Suit.Hearts) >= 5 && hand.SuitLength(Suit.Spades) >= 5)
+        if (Profile.Conventions.MajorTransfers && hand.SuitLength(Suit.Hearts) >= 5 && hand.SuitLength(Suit.Spades) >= 5)
         {
             if (h >= 10) return new(2, Denomination.Hearts);
             if (h >= 6) return new(4, Denomination.Diamonds);
             return new(2, Denomination.Diamonds);
         }
         // Texas majeur dès 0 point avec cinq cartes.
-        if (hand.SuitLength(Suit.Hearts) >= 5) return new(2, Denomination.Diamonds);
-        if (hand.SuitLength(Suit.Spades) >= 5) return new(2, Denomination.Hearts);
+        if (Profile.Conventions.MajorTransfers)
+        {
+            if (hand.SuitLength(Suit.Hearts) >= 5) return new(2, Denomination.Diamonds);
+            if (hand.SuitLength(Suit.Spades) >= 5) return new(2, Denomination.Hearts);
+        }
+        else if (hl < Profile.Responses.GameMinimumHL)
+        {
+            if (hand.SuitLength(Suit.Hearts) >= 5) return new(2, Denomination.Hearts);
+            if (hand.SuitLength(Suit.Spades) >= 5)
+                return new(Profile.Conventions.MinorTransfers ? 3 : 2, Denomination.Spades);
+        }
         var slamSuit = new[] { Suit.Diamonds, Suit.Hearts, Suit.Spades }
             .Where(suit => hand.SuitLength(suit) >= 6)
             .OrderByDescending(hand.SuitLength)
             .ThenByDescending(suit => suit)
             .FirstOrDefault();
-        if (hand.SuitLength(slamSuit) >= 6 && hl >= 16)
+        if (hand.SuitLength(slamSuit) >= 6 && hl >= Profile.Responses.SmallSlamInvitationMinimumHL)
             return new(3, ToDenomination(slamSuit));
         // Texas mineur : six cartes, ou cinq cartes avec une courte / une ambition de chelem.
-        if (IsMinorTexasHand(hand, Suit.Clubs)) return new(2, Denomination.Spades);
-        if (IsMinorTexasHand(hand, Suit.Diamonds)) return new(3, Denomination.Clubs);
-        if (hl is >= 22 and <= 25) return new(7, Denomination.NoTrump);
-        if (hl is >= 20 and <= 21) return new(5, Denomination.NoTrump);
-        if (hl is >= 18 and <= 19) return new(6, Denomination.NoTrump);
-        if (hl is >= 16 and <= 17) return new(4, Denomination.NoTrump);
-        if (hl is >= 10 and <= 15) return new(3, Denomination.NoTrump);
-        if (hl is >= 8 and <= 9) return new(2, Denomination.NoTrump);
+        if (Profile.Conventions.MinorTransfers)
+        {
+            if (IsMinorTexasHand(hand, Suit.Clubs)) return new(2, Denomination.Spades);
+            if (IsMinorTexasHand(hand, Suit.Diamonds)) return new(3, Denomination.Clubs);
+        }
+        else if (hl < Profile.Responses.GameMinimumHL)
+        {
+            if (hand.SuitLength(Suit.Clubs) >= 6) return new(3, Denomination.Clubs);
+            if (hand.SuitLength(Suit.Diamonds) >= 6) return new(3, Denomination.Diamonds);
+        }
+        return QuantitativeOneNoTrumpResponse(hl);
+    }
+
+    private Bid? QuantitativeOneNoTrumpResponse(int points)
+    {
+        var settings = Profile.Responses;
+        if (points > settings.MaximumHL) return null;
+        if (points >= settings.GrandSlamMinimumHL) return new(7, Denomination.NoTrump);
+        if (points >= settings.GrandSlamInvitationMinimumHL) return new(5, Denomination.NoTrump);
+        if (points >= settings.SmallSlamMinimumHL) return new(6, Denomination.NoTrump);
+        if (points >= settings.SmallSlamInvitationMinimumHL) return new(4, Denomination.NoTrump);
+        if (points >= settings.GameMinimumHL) return new(3, Denomination.NoTrump);
+        if (points >= settings.InvitationMinimumHL) return new(2, Denomination.NoTrump);
         return null;
     }
 
-    private static bool IsMinorTexasHand(HandEvaluation hand, Suit minor)
+    private bool IsMinorTexasHand(HandEvaluation hand, Suit minor)
     {
         if (hand.SuitLength(minor) < 5 || hand.HasFourCardMajor) return false;
         var hasShortness = Enum.GetValues<Suit>().Any(suit => suit != minor && hand.SuitLength(suit) <= 1);
-        return hand.SuitLength(minor) >= 6 && hand.HonorLengthPoints <= 9 || hasShortness ||
-            hand.HonorLengthPoints >= 16;
+        return hand.SuitLength(minor) >= 6 && hand.HonorLengthPoints < Profile.Responses.GameMinimumHL || hasShortness ||
+            hand.HonorLengthPoints >= Profile.Responses.SmallSlamInvitationMinimumHL;
     }
 
-    private static Bid? RespondToTwoNoTrump(HandEvaluation hand, bool gameForcing = false)
+    private Bid? RespondToTwoNoTrump(HandEvaluation hand, bool gameForcing = false, bool useProfile = true)
     {
         var hl = hand.HonorLengthPoints;
-        if (hand.HasFourCardMajor && (gameForcing || hl >= 4)) return new(3, Denomination.Clubs);
-        if (hand.SuitLength(Suit.Hearts) >= 5 && hand.SuitLength(Suit.Spades) >= 5)
+        var conventions = useProfile ? Profile.Conventions : new NoTrumpConventionSettings();
+        if (conventions.Stayman && hand.HasFourCardMajor && (gameForcing || hl >= conventions.TwoNoTrumpStaymanMinimumHL))
+            return new(3, Denomination.Clubs);
+        if (conventions.MajorTransfers && hand.SuitLength(Suit.Hearts) >= 5 && hand.SuitLength(Suit.Spades) >= 5)
             return new(4, Denomination.Diamonds);
         if (hand.SuitLength(Suit.Hearts) >= 6) return new(4, Denomination.Hearts);
         if (hand.SuitLength(Suit.Spades) >= 6) return new(4, Denomination.Spades);
-        if (hand.SuitLength(Suit.Hearts) >= 5) return new(3, Denomination.Diamonds);
-        if (hand.SuitLength(Suit.Spades) >= 5) return new(3, Denomination.Hearts);
-        if ((gameForcing || hl >= 16) && hand.SuitLength(Suit.Clubs) >= 6) return new(3, Denomination.Spades);
-        if ((gameForcing || hl >= 16) && hand.SuitLength(Suit.Diamonds) >= 6) return new(4, Denomination.Clubs);
+        if (conventions.MajorTransfers)
+        {
+            if (hand.SuitLength(Suit.Hearts) >= 5) return new(3, Denomination.Diamonds);
+            if (hand.SuitLength(Suit.Spades) >= 5) return new(3, Denomination.Hearts);
+        }
+        else
+        {
+            if (hand.SuitLength(Suit.Hearts) >= 5) return new(4, Denomination.Hearts);
+            if (hand.SuitLength(Suit.Spades) >= 5) return new(4, Denomination.Spades);
+        }
+        if (conventions.MinorTransfers)
+        {
+            if ((gameForcing || hl >= 16) && hand.SuitLength(Suit.Clubs) >= 6) return new(3, Denomination.Spades);
+            if ((gameForcing || hl >= 16) && hand.SuitLength(Suit.Diamonds) >= 6) return new(4, Denomination.Clubs);
+        }
+        else if (gameForcing || hl >= 16)
+        {
+            if (hand.SuitLength(Suit.Clubs) >= 6) return new(5, Denomination.Clubs);
+            if (hand.SuitLength(Suit.Diamonds) >= 6) return new(5, Denomination.Diamonds);
+        }
         if (hand.IsBalanced && hl is >= 13 and <= 15) return new(6, Denomination.NoTrump);
         if (hand.IsBalanced && hl == 16) return new(5, Denomination.NoTrump);
         if (hand.IsBalanced && hl == 12) return new(4, Denomination.NoTrump);

@@ -5,7 +5,7 @@ using Bridge.Core.Models;
 /// <summary>Chapitres SEF : ouvertures (mineures, majeures, 1SA, barrages, fortes).</summary>
 public sealed partial class SefBiddingEngine
 {
-    private static Bid? Opening(HandEvaluation hand, Auction auction)
+    private Bid? Opening(HandEvaluation hand, Auction auction)
     {
         var h = hand.HighCardPoints;
         var passedBeforeOpening = auction.Calls.Count >= 2 && auction.Calls.All(call => call.IsPass);
@@ -23,7 +23,9 @@ public sealed partial class SefBiddingEngine
             return new(2, Denomination.Diamonds);
         if (hand.IsNoTrumpOpeningShape && hand.HonorLengthPoints is >= 22 and <= 23)
             return new(2, Denomination.Clubs);
-        if (hand.IsNoTrumpOpeningShape && hand.HonorLengthPoints is >= 20 and <= 21)
+        if ((hand.IsNoTrumpOpeningShape || Profile.TwoNoTrump.AllowFiveCardMajor && hand.IsBalanced) &&
+            hand.HonorLengthPoints >= Profile.TwoNoTrump.Minimum &&
+            hand.HonorLengthPoints <= Profile.TwoNoTrump.Maximum)
             return new(2, Denomination.NoTrump);
         // 2♣ fort indéterminé : 21-23HL avec au moins cinq cartes.
         if (hand.HonorLengthPoints is >= 21 and <= 23 && LongestLength(hand) >= 5)
@@ -64,10 +66,13 @@ public sealed partial class SefBiddingEngine
             return new(hand.SuitLength(preempt.Value) >= 8 ? 4 : 3, ToDenomination(preempt.Value));
 
         // Ouverture au palier de 1 : 12H, ou 11H avec 13HL.
-        if (h < 12 && !(h == 11 && hand.HonorLengthPoints >= 13)) return null;
-        if (IsOneNoTrumpOpeningShape(hand) && h is >= 15 and <= 17 &&
-            (hand.IsNoTrumpOpeningShape || h <= 16))
+        if (IsOneNoTrumpOpeningShape(hand) &&
+            (Profile.OneNoTrump.AllowFiveCardMajor ||
+                hand.SuitLength(Suit.Hearts) < 5 && hand.SuitLength(Suit.Spades) < 5) &&
+            h >= Profile.OneNoTrump.Minimum && h <= Profile.OneNoTrump.Maximum &&
+            (hand.IsNoTrumpOpeningShape || h < Profile.OneNoTrump.Maximum))
             return new(1, Denomination.NoTrump);
+        if (h < 12 && !(h == 11 && hand.HonorLengthPoints >= 13)) return null;
 
         var hearts = hand.SuitLength(Suit.Hearts);
         var spades = hand.SuitLength(Suit.Spades);

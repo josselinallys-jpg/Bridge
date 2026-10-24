@@ -7,6 +7,11 @@
     <ProjectReference Include="..\Bridge.Engine\Bridge.Engine.csproj" />
   </ItemGroup>
 
+  <ItemGroup>
+    <None Include="..\..\bidding-profile.json" Link="bidding-profile.json" CopyToOutputDirectory="PreserveNewest" CopyToPublishDirectory="PreserveNewest" />
+    <None Include="..\..\sef-bidding-profile.json" Link="sef-bidding-profile.json" CopyToOutputDirectory="PreserveNewest" CopyToPublishDirectory="PreserveNewest" />
+  </ItemGroup>
+
   <PropertyGroup>
     <OutputType>Exe</OutputType>
     <TargetFramework>net8.0</TargetFramework>

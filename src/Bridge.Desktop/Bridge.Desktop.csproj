@@ -19,6 +19,8 @@
   <ItemGroup>
     <Resource Include="Assets\*.png" />
     <None Update="Rules\auction-tooltip-rules.csv" CopyToOutputDirectory="PreserveNewest" />
+    <None Include="..\..\bidding-profile.json" Link="bidding-profile.json" CopyToOutputDirectory="PreserveNewest" CopyToPublishDirectory="PreserveNewest" />
+    <None Include="..\..\sef-bidding-profile.json" Link="sef-bidding-profile.json" CopyToOutputDirectory="PreserveNewest" CopyToPublishDirectory="PreserveNewest" />
   </ItemGroup>
 
 </Project>

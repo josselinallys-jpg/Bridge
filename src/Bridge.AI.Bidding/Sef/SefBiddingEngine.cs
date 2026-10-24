@@ -12,8 +12,32 @@ public sealed partial class SefBiddingEngine : ICompetitiveBiddingStrategy
     private readonly ILogger _logger;
 
     public string LastDecisionRule { get; private set; } = "Aucune décision";
+    public BiddingProfile Profile { get; }
 
-    public SefBiddingEngine(ILogger? logger = null) => _logger = logger ?? LoggerProvider.GetLogger();
+    public SefBiddingEngine(ILogger? logger = null, BiddingProfile? profile = null)
+    {
+        var selected = profile ?? new BiddingProfile();
+        selected.Validate();
+        var rules = selected.Rules.Select(rule => rule with
+        {
+            SideSequence = Array.AsReadOnly(rule.SideSequence.ToArray()),
+            OpponentSequence = Array.AsReadOnly(rule.OpponentSequence.ToArray()),
+            AuctionSequence = Array.AsReadOnly(rule.AuctionSequence.ToArray()),
+            Conditions = Array.AsReadOnly(rule.Conditions.ToArray()),
+            CandidateSuits = Array.AsReadOnly(rule.CandidateSuits.ToArray()),
+            RequiresConventions = Array.AsReadOnly(rule.RequiresConventions.ToArray()),
+            DisabledConventions = Array.AsReadOnly(rule.DisabledConventions.ToArray()),
+            AnyOf = Array.AsReadOnly(rule.AnyOf.Select(group => (IReadOnlyList<HandCondition>)Array.AsReadOnly(group.ToArray())).ToArray())
+        }).ToArray();
+        Profile = selected with
+        {
+            Rules = Array.AsReadOnly(rules),
+            CustomConventions = new System.Collections.ObjectModel.ReadOnlyDictionary<string, bool>(
+                new Dictionary<string, bool>(selected.CustomConventions))
+        };
+        _configuredRules = rules.OrderByDescending(rule => rule.Priority).ToArray();
+        _logger = logger ?? LoggerProvider.GetLogger();
+    }
 
     public BidExplanation ExplainCall(Seat seat, IReadOnlyList<Card> cards,
         IReadOnlyList<AuctionCall> previousCalls, AuctionCall call)
@@ -24,11 +48,41 @@ public sealed partial class SefBiddingEngine : ICompetitiveBiddingStrategy
             ["H"] = hand.HighCardPoints.ToString(),
             ["HL"] = hand.HonorLengthPoints.ToString(),
             ["HLD"] = hand.TotalPoints.ToString(),
+            ["profil"] = Profile.Id,
+            ["minimum1SA"] = Profile.OneNoTrump.Minimum.ToString(),
+            ["maximum1SA"] = Profile.OneNoTrump.Maximum.ToString(),
+            ["minimum2SA"] = Profile.TwoNoTrump.Minimum.ToString(),
+            ["maximum2SA"] = Profile.TwoNoTrump.Maximum.ToString(),
+            ["majeureCinquieme1SA"] = Profile.OneNoTrump.AllowFiveCardMajor ? "possible selon la distribution" : "exclue",
+            ["majeureCinquieme2SA"] = Profile.TwoNoTrump.AllowFiveCardMajor ? "possible selon la distribution" : "exclue",
+            ["minimumStayman"] = Profile.Conventions.StaymanMinimumHL.ToString(),
+            ["minimumStayman2SA"] = Profile.Conventions.TwoNoTrumpStaymanMinimumHL.ToString(),
             ["palier"] = call.Bid?.Level.ToString() ?? "",
             ["couleur"] = call.Bid is { } bidValue ? SuitName(bidValue.Denomination) : "",
             ["cartes"] = call.Bid is { } suitBid && suitBid.Denomination != Denomination.NoTrump
                 ? hand.SuitLength((Suit)suitBid.Denomination).ToString() : ""
         };
+
+        if (_configuredRules.Length > 0)
+        {
+            var previousAuction = new Auction();
+            foreach (var previous in previousCalls) previousAuction.AddCall(previous);
+            if (TryConfiguredCall(seat, hand, previousAuction, out var configured, out var rule, call) ||
+                TryConfiguredCall(seat, hand, previousAuction, out configured, out rule, call, describeMeaning: true))
+            {
+                var explainedCall = call with { Forcing = configured.Forcing };
+                values["descriptionRegle"] = BiddingRuleText.Description(rule!, explainedCall);
+                values["forcing"] = BiddingRuleText.Forcing(rule!.Response.Forcing!.Value);
+                values["conditionsRegle"] = BiddingRuleText.Conditions(rule);
+                return Explanation(rule.Id, values);
+            }
+            var bids = previousCalls.Where(previous => SameSide(previous.Seat, seat) && previous.Bid.HasValue)
+                .Select(previous => previous.Bid!.Value).ToArray();
+            if (call.Action == AuctionAction.Pass && MinorTexasTrump(bids).HasValue && MinorTexasShortMajor(bids).HasValue &&
+                !bids.Any(previous => previous.Level >= (previous.Denomination == Denomination.NoTrump ? 3 :
+                    previous.Denomination is Denomination.Hearts or Denomination.Spades ? 4 : 5)))
+                return Explanation("pass-forcing", values);
+        }
 
         if (call.Action == AuctionAction.Pass) return Explanation("pass", values);
         if (call.Action == AuctionAction.Double) return Explanation("double", values);
@@ -96,32 +150,35 @@ public sealed partial class SefBiddingEngine : ICompetitiveBiddingStrategy
         return Explanation("unknown", values);
     }
 
-    private static BidExplanation? ExplainOneNoTrumpCall(Bid bid, Seat seat, AuctionCall opening,
+    private BidExplanation? ExplainOneNoTrumpCall(Bid bid, Seat seat, AuctionCall opening,
         IReadOnlyList<AuctionCall> ownBids, IReadOnlyList<AuctionCall> partnerBids,
         HandEvaluation hand, Dictionary<string, string> values)
     {
         var partnerLast = partnerBids.LastOrDefault().Bid;
         if (opening.Seat == seat.Partner() && ownBids.Count == 0 && partnerLast == opening.Bid)
         {
-            if (bid == new Bid(2, Denomination.Clubs) && hand.HasFourCardMajor && hand.HonorLengthPoints >= 8)
+            if (Profile.Conventions.Stayman && bid == new Bid(2, Denomination.Clubs) &&
+                hand.HasFourCardMajor && hand.HonorLengthPoints >= Profile.Conventions.StaymanMinimumHL)
                 return Explanation("one-nt-stayman", values);
-            if (bid == new Bid(4, Denomination.Diamonds) &&
+            if (Profile.Conventions.MajorTransfers && bid == new Bid(4, Denomination.Diamonds) &&
                 hand.SuitLength(Suit.Hearts) >= 5 && hand.SuitLength(Suit.Spades) >= 5)
             {
                 values["zone"] = $"{hand.HighCardPoints}H";
                 return Explanation("one-nt-major-two-suited", values);
             }
-            if (bid == new Bid(2, Denomination.Diamonds) && hand.SuitLength(Suit.Hearts) >= 5)
+            if (Profile.Conventions.MajorTransfers && bid == new Bid(2, Denomination.Diamonds) && hand.SuitLength(Suit.Hearts) >= 5)
                 return Explanation("one-nt-texas-hearts", values);
-            if (bid == new Bid(2, Denomination.Hearts) && hand.SuitLength(Suit.Spades) >= 5)
+            if (Profile.Conventions.MajorTransfers && bid == new Bid(2, Denomination.Hearts) && hand.SuitLength(Suit.Spades) >= 5)
                 return Explanation("one-nt-texas-spades", values);
-            if (bid is { Level: 2, Denomination: Denomination.Spades } or { Level: 3, Denomination: Denomination.Clubs })
+            if (Profile.Conventions.MinorTransfers &&
+                bid is ({ Level: 2, Denomination: Denomination.Spades } or { Level: 3, Denomination: Denomination.Clubs }))
                 return Explanation("one-nt-texas-minor", values);
             if (bid.Denomination == Denomination.NoTrump && bid.Level is >= 2 and <= 7)
                 return Explanation("one-nt-quantitative", values);
+            return Explanation("natural", values);
         }
 
-        if (opening.Seat == seat && ownBids.Count == 1 && partnerLast == new Bid(2, Denomination.Clubs))
+        if (Profile.Conventions.Stayman && opening.Seat == seat && ownBids.Count == 1 && partnerLast == new Bid(2, Denomination.Clubs))
         {
             return bid.Denomination switch
             {
@@ -133,7 +190,7 @@ public sealed partial class SefBiddingEngine : ICompetitiveBiddingStrategy
             };
         }
 
-        if (opening.Seat != seat && ownBids.Count > 0 && ownBids[0].Bid == new Bid(2, Denomination.Clubs) &&
+        if (Profile.Conventions.Stayman && opening.Seat != seat && ownBids.Count > 0 && ownBids[0].Bid == new Bid(2, Denomination.Clubs) &&
             partnerLast == new Bid(2, Denomination.NoTrump))
         {
             if (bid is { Level: 3, Denomination: Denomination.Clubs or Denomination.Diamonds })
@@ -142,7 +199,7 @@ public sealed partial class SefBiddingEngine : ICompetitiveBiddingStrategy
                 return Explanation("stayman-two-nt-transfer-game", values);
         }
 
-        if (opening.Seat == seat && ownBids.Count >= 2 && ownBids[^1].Bid == new Bid(2, Denomination.NoTrump))
+        if (Profile.Conventions.Stayman && opening.Seat == seat && ownBids.Count >= 2 && ownBids[^1].Bid == new Bid(2, Denomination.NoTrump))
         {
             var transfer = partnerLast switch
             {
@@ -205,7 +262,7 @@ public sealed partial class SefBiddingEngine : ICompetitiveBiddingStrategy
         return Explanation("unknown", values);
     }
 
-    private static BidExplanation? ExplainStrongOpeningCall(Bid bid, Seat seat,
+    private BidExplanation? ExplainStrongOpeningCall(Bid bid, Seat seat,
         IReadOnlyList<AuctionCall> previousCalls, IReadOnlyList<AuctionCall> ownBids,
         IReadOnlyList<AuctionCall> partnerBids, HandEvaluation hand, Dictionary<string, string> values)
     {
@@ -252,12 +309,12 @@ public sealed partial class SefBiddingEngine : ICompetitiveBiddingStrategy
         {
             if (opening.Seat != seat && ownBids.Count == 0 && partnerLast == opening.Bid)
             {
-                if (bid == new Bid(3, Denomination.Clubs)) return Explanation("strong-two-nt-stayman", values);
-                if (bid is { Level: 3, Denomination: Denomination.Diamonds or Denomination.Hearts })
+                if (Profile.Conventions.Stayman && bid == new Bid(3, Denomination.Clubs)) return Explanation("strong-two-nt-stayman", values);
+                if (Profile.Conventions.MajorTransfers && bid is { Level: 3, Denomination: Denomination.Diamonds or Denomination.Hearts })
                     return Explanation("strong-two-nt-major-texas", values);
-                if (bid == new Bid(3, Denomination.Spades)) return Explanation("strong-two-nt-club-texas", values);
-                if (bid == new Bid(4, Denomination.Clubs)) return Explanation("strong-two-nt-diamond-texas", values);
-                if (bid == new Bid(4, Denomination.Diamonds)) return Explanation("strong-two-nt-five-five", values);
+                if (Profile.Conventions.MinorTransfers && bid == new Bid(3, Denomination.Spades)) return Explanation("strong-two-nt-club-texas", values);
+                if (Profile.Conventions.MinorTransfers && bid == new Bid(4, Denomination.Clubs)) return Explanation("strong-two-nt-diamond-texas", values);
+                if (Profile.Conventions.MajorTransfers && bid == new Bid(4, Denomination.Diamonds)) return Explanation("strong-two-nt-five-five", values);
                 if (bid is { Level: 4, Denomination: Denomination.Hearts or Denomination.Spades })
                     return Explanation("strong-two-nt-major-game", values);
                 if (bid == new Bid(3, Denomination.NoTrump)) return Explanation("strong-two-nt-natural-game", values);
@@ -266,19 +323,19 @@ public sealed partial class SefBiddingEngine : ICompetitiveBiddingStrategy
             }
             if (opening.Seat == seat && ownBids.Count > 0)
             {
-                if (partnerLast == new Bid(3, Denomination.Clubs))
+                if (Profile.Conventions.Stayman && partnerLast == new Bid(3, Denomination.Clubs))
                     return Explanation("strong-two-nt-stayman-answer", values);
-                if (partnerLast == new Bid(3, Denomination.Diamonds))
+                if (Profile.Conventions.MajorTransfers && partnerLast == new Bid(3, Denomination.Diamonds))
                     return Explanation(hand.SuitLength(Suit.Hearts) >= 3
                         ? "strong-two-nt-texas-fit" : "strong-two-nt-texas-no-fit", values);
-                if (partnerLast == new Bid(3, Denomination.Hearts))
+                if (Profile.Conventions.MajorTransfers && partnerLast == new Bid(3, Denomination.Hearts))
                     return Explanation(hand.SuitLength(Suit.Spades) >= 3
                         ? "strong-two-nt-texas-fit" : "strong-two-nt-texas-no-fit", values);
-                if (partnerLast == new Bid(3, Denomination.Spades))
+                if (Profile.Conventions.MinorTransfers && partnerLast == new Bid(3, Denomination.Spades))
                     return Explanation("strong-two-nt-club-texas-rectification", values);
-                if (partnerLast == new Bid(4, Denomination.Clubs))
+                if (Profile.Conventions.MinorTransfers && partnerLast == new Bid(4, Denomination.Clubs))
                     return Explanation("strong-two-nt-diamond-texas-rectification", values);
-                if (partnerLast == new Bid(4, Denomination.Diamonds))
+                if (Profile.Conventions.MajorTransfers && partnerLast == new Bid(4, Denomination.Diamonds))
                     return Explanation("strong-two-nt-five-five-choice", values);
             }
         }
@@ -353,6 +410,21 @@ public sealed partial class SefBiddingEngine : ICompetitiveBiddingStrategy
         _logger.Debug($"[SEF] {seat}: H={hand.HighCardPoints}, HL={hand.HonorLengthPoints}, HLD={hand.TotalPoints}");
 
         AuctionCall call;
+        LastConfiguredRuleId = null;
+        LastForcing = RuleForcing.NonForcing;
+        if (TryConfiguredCall(seat, hand, auction, out var configured, out var configuredRule))
+        {
+            LastConfiguredRuleId = configuredRule!.Id;
+            LastForcing = configuredRule.Response.Forcing!.Value;
+            LastDecisionRule = $"{configuredRule.Id} : {configuredRule.Description}";
+            var actual = EnforceForcing(seat, hand, auction, configured);
+            _logger.Information($"[{Profile.Id}] {seat}: {CallText(actual)} - {LastDecisionRule}");
+            return actual;
+        }
+        if (!Profile.UseStandardFallback)
+        {
+            return EvaluateAndChooseBackup(seat, hand, auction, "aucune règle configurée applicable");
+        }
         if (auction.HighestBid is null)
             call = BidCall(seat, Opening(hand, auction));
         else if (auction.Calls.Any(call => SameSide(call.Seat, seat) && call.Action == AuctionAction.Double))
@@ -368,6 +440,9 @@ public sealed partial class SefBiddingEngine : ICompetitiveBiddingStrategy
         else
             call = ContinueAuction(seat, hand, auction, sideBids);
 
+        var proposedCall = call;
+        call = EnforceForcing(seat, hand, auction, call);
+        var forcingFallback = call != proposedCall;
         if (call.Action == AuctionAction.Bid &&
             (!call.Bid.HasValue || call.Bid.Value.Level > 7 || !auction.IsLegal(call.Bid.Value)))
         {
@@ -376,12 +451,15 @@ public sealed partial class SefBiddingEngine : ICompetitiveBiddingStrategy
         }
         else
         {
-            LastDecisionRule = ExplainDecision(hand, auction, sideBids, call);
+            if (!forcingFallback) LastDecisionRule = ExplainDecision(hand, auction, sideBids, call);
         }
 
         _logger.Information($"[SEF] {seat}: {CallText(call)} — {LastDecisionRule}");
         return call;
     }
+
+    public AuctionCall EnforceCall(Seat seat, IReadOnlyList<Card> cards, Auction auction, AuctionCall call) =>
+        EnforceForcing(seat, new HandEvaluation(cards), auction, AnnotateCall(seat, cards, auction.Calls, call));
 
     private static string ExplainDecision(HandEvaluation hand, Auction auction,
         IReadOnlyList<AuctionCall> sideBids, AuctionCall call)
@@ -433,7 +511,7 @@ public sealed partial class SefBiddingEngine : ICompetitiveBiddingStrategy
                 !SameSide(call.Seat, seat) && call.Seat != seat.Partner());
     }
 
-    private static AuctionCall ContinueAuction(Seat seat, HandEvaluation hand, Auction auction,
+    private AuctionCall ContinueAuction(Seat seat, HandEvaluation hand, Auction auction,
         IReadOnlyList<AuctionCall> sideBids)
     {
         var bids = sideBids.Select(call => call.Bid!.Value).ToList();
@@ -523,7 +601,7 @@ public sealed partial class SefBiddingEngine : ICompetitiveBiddingStrategy
     private static bool IsNaturalOpeningSequence(Auction auction, AuctionCall opening) =>
         auction.Calls.FirstOrDefault(call => call.Action == AuctionAction.Bid) == opening;
 
-    private static AuctionCall AdvancedContinuation(Seat seat, HandEvaluation hand, Auction auction,
+    private AuctionCall AdvancedContinuation(Seat seat, HandEvaluation hand, Auction auction,
         IReadOnlyList<AuctionCall> sideBids)
     {
         var bids = sideBids.Select(call => call.Bid!.Value).ToList();
@@ -537,11 +615,11 @@ public sealed partial class SefBiddingEngine : ICompetitiveBiddingStrategy
             if (responderBid == new Bid(3, Denomination.Clubs))
                 return BidCall(seat, bids.Count == 4
                     ? StaymanAnswer(hand, 3)
-                    : AfterStayman(hand, bids[4], 3, NoTrumpOpenerMinimum(bids[0])));
+                    : AfterStayman(hand, bids[4], 3, NoTrumpOpenerMinimum(bids[0]), useProfile: false));
             if (TexasTarget(responderBid, 2).HasValue)
                 return BidCall(seat, bids.Count == 4
-                    ? TwoNoTrumpRebid(hand, responderBid)
-                    : AfterTexas(hand, responderBid, 2));
+                    ? TwoNoTrumpRebid(hand, responderBid, useProfile: false)
+                    : new Bid(4, TexasTarget(responderBid, 2)!.Value));
         }
 
         var agreedTrump = FindAgreedTrump(bids);
@@ -555,10 +633,10 @@ public sealed partial class SefBiddingEngine : ICompetitiveBiddingStrategy
         // Suites de l'ouverture de 1SA : deuxième redemande de l'ouvreur.
         if (bids.Count == 4 && bids[0] == new Bid(1, Denomination.NoTrump))
         {
-            if (bids[1] == new Bid(2, Denomination.Clubs))
+            if (Profile.Conventions.Stayman && bids[1] == new Bid(2, Denomination.Clubs))
                 return BidCall(seat, StaymanContinuation(hand, bids));
             // Bicolore 5-5 : après Texas ♠ rectifié, l'annonce des cœurs demande un choix.
-            if (bids[1] == new Bid(2, Denomination.Hearts) && bids[2] == new Bid(2, Denomination.Spades) &&
+            if (Profile.Conventions.MajorTransfers && bids[1] == new Bid(2, Denomination.Hearts) && bids[2] == new Bid(2, Denomination.Spades) &&
                 bids[3].Denomination == Denomination.Hearts)
                 return BidCall(seat, ChooseMajorGame(hand, bids[3]));
         }
@@ -578,8 +656,11 @@ public sealed partial class SefBiddingEngine : ICompetitiveBiddingStrategy
         return CompetitiveFallback(seat, hand, auction);
     }
 
-    private static Denomination? FindAgreedTrump(IReadOnlyList<Bid> bids)
+    private Denomination? FindAgreedTrump(IReadOnlyList<Bid> bids)
     {
+        if (MinorTexasTrump(bids) is { } transferred && MinorTexasShortMajor(bids).HasValue &&
+            bids.Count >= 5 && bids[4] is { Level: >= 4, Denomination: not Denomination.NoTrump })
+            return transferred;
         foreach (var denomination in new[]
                  { Denomination.Spades, Denomination.Hearts, Denomination.Diamonds, Denomination.Clubs })
         {
@@ -598,7 +679,7 @@ public sealed partial class SefBiddingEngine : ICompetitiveBiddingStrategy
     private static bool IsStrongNoTrumpStayman(IReadOnlyList<Bid> bids) =>
         IsStrongNoTrumpRebid(bids) && bids[3] == new Bid(3, Denomination.Clubs);
 
-    private static bool IsArtificialBid(IReadOnlyList<Bid> bids, int index)
+    private bool IsArtificialBid(IReadOnlyList<Bid> bids, int index)
     {
         var bid = bids[index];
         if (index == 0 && bid.Level == 2 && bid.Denomination is Denomination.Clubs or Denomination.Diamonds)
@@ -608,6 +689,8 @@ public sealed partial class SefBiddingEngine : ICompetitiveBiddingStrategy
             return true;
         if (index == 3 && IsStrongNoTrumpStayman(bids.Take(4).ToList()))
             return true;
+        if (index == 1 && bids[0] is { Level: 1 or 2, Denomination: Denomination.NoTrump } && !Profile.IsConventionEnabled("stayman"))
+            return false;
         if (index > 0 && bids[index - 1].Denomination == Denomination.NoTrump &&
             bid.Denomination == Denomination.Clubs && bid.Level == bids[index - 1].Level + 1)
             return true;

@@ -531,6 +531,303 @@ public sealed class SefOneNoTrumpTests
             _engine.DecideBid(Seat.North, opener, auction));
     }
 
+    [Theory]
+    [InlineData(12, 14, 1)]
+    [InlineData(15, 17, 0)]
+    public void Profile_Opening_UsesConfiguredRange(int minimum, int maximum, int expectedLevel)
+    {
+        var engine = new SefBiddingEngine(profile: new BiddingProfile
+        {
+            OneNoTrump = new() { Minimum = minimum, Maximum = maximum }
+        });
+        var hand = Cards("SA", "S7", "S4", "HK", "H5", "H2", "DK", "D8", "D3", "CQ", "C6", "C5", "C2");
+
+        var bid = engine.DecideBid(Seat.North, hand, new Auction());
+
+        if (expectedLevel == 1) Assert.Equal(new Bid(1, Denomination.NoTrump), bid);
+        else Assert.NotEqual(new Bid(1, Denomination.NoTrump), bid);
+    }
+
+    [Fact]
+    public void Profile_FiveCardMajorCanBeExcluded()
+    {
+        var engine = new SefBiddingEngine(profile: new BiddingProfile
+        {
+            OneNoTrump = new() { AllowFiveCardMajor = false }
+        });
+        var hand = Cards("SA", "SK", "S7", "S4", "S2", "HQ", "H6", "H3", "DA", "D8", "D3", "CQ", "C9");
+
+        Assert.Equal(new Bid(1, Denomination.Spades), engine.DecideBid(Seat.North, hand, new Auction()));
+    }
+
+    [Theory]
+    [InlineData(true, 8, 2, Denomination.Clubs)]
+    [InlineData(true, 11, 2, Denomination.NoTrump)]
+    [InlineData(false, 8, 2, Denomination.NoTrump)]
+    public void Profile_Stayman_UsesActivationAndThreshold(bool enabled, int minimum, int level, Denomination denomination)
+    {
+        var engine = new SefBiddingEngine(profile: new BiddingProfile
+        {
+            Conventions = new() { Stayman = enabled, StaymanMinimumHL = minimum }
+        });
+        var hand = Cards("SK", "S7", "S4", "S2", "HQ", "H5", "H2", "DK", "D8", "D3", "C6", "C5", "C2");
+
+        Assert.Equal(new Bid(level, denomination), engine.DecideBid(Seat.South, hand,
+            AuctionWithBids((Seat.North, new Bid(1, Denomination.NoTrump)))));
+    }
+
+    [Theory]
+    [InlineData(true, Denomination.Diamonds)]
+    [InlineData(false, Denomination.Hearts)]
+    public void Profile_MajorTransferDisabled_UsesNaturalResponse(bool enabled, Denomination denomination)
+    {
+        var engine = new SefBiddingEngine(profile: new BiddingProfile
+        {
+            Conventions = new() { MajorTransfers = enabled }
+        });
+        var hand = Cards("S7", "S4", "S2", "HQ", "H8", "H7", "H5", "H2", "D8", "D3", "C6", "C5", "C2");
+
+        Assert.Equal(new Bid(2, denomination), engine.DecideBid(Seat.South, hand,
+            AuctionWithBids((Seat.North, new Bid(1, Denomination.NoTrump)))));
+    }
+
+    [Theory]
+    [InlineData(true, 2, Denomination.Spades)]
+    [InlineData(false, 3, Denomination.Clubs)]
+    public void Profile_MinorTransferDisabled_UsesNaturalResponse(bool enabled, int level, Denomination denomination)
+    {
+        var engine = new SefBiddingEngine(profile: new BiddingProfile
+        {
+            Conventions = new() { MinorTransfers = enabled }
+        });
+        var hand = Cards("S7", "S4", "S2", "H8", "H2", "D8", "D3", "CQ", "C8", "C7", "C6", "C5", "C2");
+
+        Assert.Equal(new Bid(level, denomination), engine.DecideBid(Seat.South, hand,
+            AuctionWithBids((Seat.North, new Bid(1, Denomination.NoTrump)))));
+    }
+
+    [Theory]
+    [InlineData(Denomination.Clubs)]
+    [InlineData(Denomination.Diamonds)]
+    [InlineData(Denomination.Hearts)]
+    [InlineData(Denomination.Spades)]
+    public void Profile_DisabledConventions_OpenerDoesNotRectify(Denomination response)
+    {
+        var engine = new SefBiddingEngine(profile: new BiddingProfile
+        {
+            Conventions = new() { Stayman = false, MajorTransfers = false, MinorTransfers = false }
+        });
+        var hand = Cards("SA", "SK", "S7", "S4", "HQ", "H6", "H3", "DA", "D8", "D3", "CQ", "C9", "C2");
+
+        Assert.Null(engine.DecideBid(Seat.North, hand, AuctionWithBids(
+            (Seat.North, new Bid(1, Denomination.NoTrump)), (Seat.South, new Bid(2, response)))));
+    }
+
+    [Fact]
+    public void Profile_Invitation_OpenerAcceptsAtConfiguredMaximum()
+    {
+        var engine = new SefBiddingEngine(profile: new BiddingProfile
+        {
+            OneNoTrump = new() { Minimum = 12, Maximum = 14 }
+        });
+        var hand = Cards("SA", "S7", "S4", "HK", "H5", "H2", "DK", "D8", "D3", "CA", "C6", "C5", "C2");
+
+        Assert.Equal(new Bid(3, Denomination.NoTrump), engine.DecideBid(Seat.North, hand, AuctionWithBids(
+            (Seat.North, new Bid(1, Denomination.NoTrump)), (Seat.South, new Bid(2, Denomination.NoTrump)))));
+    }
+
+    [Fact]
+    public void Profile_QuantitativeResponses_UseConfiguredThresholds()
+    {
+        var engine = new SefBiddingEngine(profile: new BiddingProfile
+        {
+            Responses = new() { InvitationMinimumHL = 6, GameMinimumHL = 8 }
+        });
+        var hand = Cards("SK", "S7", "S4", "HQ", "H5", "H2", "DK", "D8", "D3", "C8", "C6", "C5", "C2");
+
+        Assert.Equal(new Bid(3, Denomination.NoTrump), engine.DecideBid(Seat.South, hand,
+            AuctionWithBids((Seat.North, new Bid(1, Denomination.NoTrump)))));
+    }
+
+    [Fact]
+    public void Profile_Explanation_ExposesConfiguredValues()
+    {
+        var engine = new SefBiddingEngine(profile: new BiddingProfile
+        {
+            Id = "sa-faible",
+            OneNoTrump = new() { Minimum = 12, Maximum = 14 },
+            Conventions = new() { StaymanMinimumHL = 11 }
+        });
+        var hand = Cards("SA", "S7", "S4", "HK", "H5", "H2", "DK", "D8", "D3", "CQ", "C6", "C5", "C2");
+        var explanation = engine.ExplainCall(Seat.North, hand, [],
+            new AuctionCall(Seat.North, AuctionAction.Bid, new Bid(1, Denomination.NoTrump)));
+
+        Assert.Equal("opening-1nt", explanation.RuleId);
+        Assert.Equal("sa-faible", explanation.Values["profil"]);
+        Assert.Equal("12", explanation.Values["minimum1SA"]);
+        Assert.Equal("14", explanation.Values["maximum1SA"]);
+        Assert.Equal("11", explanation.Values["minimumStayman"]);
+    }
+
+    [Fact]
+    public void Profile_NaturalResponse_IsNotExplainedAsTransfer()
+    {
+        var engine = new SefBiddingEngine(profile: new BiddingProfile
+        {
+            Conventions = new() { MajorTransfers = false }
+        });
+        var hand = Cards("S7", "S4", "S2", "HQ", "H8", "H7", "H5", "H2", "D8", "D3", "C6", "C5", "C2");
+        var auction = AuctionWithBids((Seat.North, new Bid(1, Denomination.NoTrump)));
+        var call = engine.DecideCall(Seat.South, hand, auction);
+
+        Assert.Equal("natural", engine.ExplainCall(Seat.South, hand, auction.Calls, call).RuleId);
+    }
+
+    [Theory]
+    [InlineData(0, 2)]
+    [InlineData(1, 3)]
+    [InlineData(2, 4)]
+    [InlineData(3, 6)]
+    [InlineData(4, 5)]
+    [InlineData(5, 7)]
+    public void Profile_AllQuantitativeZones_AreConfigurable(int offset, int level)
+    {
+        var engine = new SefBiddingEngine(profile: new BiddingProfile
+        {
+            Responses = new()
+            {
+                InvitationMinimumHL = 8 - offset,
+                GameMinimumHL = 9 - offset,
+                SmallSlamInvitationMinimumHL = 10 - offset,
+                SmallSlamMinimumHL = 11 - offset,
+                GrandSlamInvitationMinimumHL = 12 - offset,
+                GrandSlamMinimumHL = 13 - offset
+            }
+        });
+        var hand = Cards("SK", "S7", "S4", "HQ", "H5", "H2", "DK", "D8", "D3", "C8", "C6", "C5", "C2");
+
+        Assert.Equal(new Bid(level, Denomination.NoTrump), engine.DecideBid(Seat.South, hand,
+            AuctionWithBids((Seat.North, new Bid(1, Denomination.NoTrump)))));
+    }
+
+    [Fact]
+    public void MinorTexas_ShortHeart_OpenerShowsClubControlAndDiamondFit()
+    {
+        var engine = DeclarativeTexasEngine();
+        var auction = AuctionWithBids((Seat.North, new Bid(1, Denomination.NoTrump)),
+            (Seat.South, new Bid(3, Denomination.Clubs)), (Seat.North, new Bid(3, Denomination.Diamonds)),
+            (Seat.South, new Bid(3, Denomination.Hearts)));
+        var hand = Cards("SA", "SK", "S2", "H8", "H5", "H2", "DK", "DQ", "D2", "CA", "C8", "C5", "C2");
+
+        var call = engine.DecideCall(Seat.North, hand, auction);
+        var explanation = engine.ExplainCall(Seat.North, hand, auction.Calls, call);
+
+        Assert.Equal(new Bid(4, Denomination.Clubs), call.Bid);
+        Assert.Equal("one-nt.minor-short.opener-control", explanation.RuleId);
+        Assert.Contains("Controle", explanation.Values["descriptionRegle"]);
+        Assert.Contains("mineure", explanation.Values["descriptionRegle"]);
+        Assert.Equal(RuleForcing.GameForcing, engine.LastForcing);
+    }
+
+    [Fact]
+    public void MinorTexas_AfterClubControl_ResponderConcludesFiveDiamondsInsteadOfPassing()
+    {
+        var engine = DeclarativeTexasEngine();
+        var auction = AuctionWithBids((Seat.North, new Bid(1, Denomination.NoTrump)),
+            (Seat.South, new Bid(3, Denomination.Clubs)), (Seat.North, new Bid(3, Denomination.Diamonds)),
+            (Seat.South, new Bid(3, Denomination.Hearts)), (Seat.North, new Bid(4, Denomination.Clubs)));
+        var hand = Cards("SQ", "S8", "S2", "H2", "DA", "DQ", "DJ", "D8", "D6", "D2", "CQ", "C8", "C2");
+
+        Assert.Equal(new Bid(5, Denomination.Diamonds), engine.DecideBid(Seat.South, hand, auction));
+        Assert.Equal("one-nt.minor-short.conclude", engine.LastConfiguredRuleId);
+    }
+
+    [Fact]
+    public void MinorTexas_AfterClubControl_PositiveResponderShowsSpadeControl()
+    {
+        var engine = DeclarativeTexasEngine();
+        var auction = AuctionWithBids((Seat.North, new Bid(1, Denomination.NoTrump)),
+            (Seat.South, new Bid(3, Denomination.Clubs)), (Seat.North, new Bid(3, Denomination.Diamonds)),
+            (Seat.South, new Bid(3, Denomination.Hearts)), (Seat.North, new Bid(4, Denomination.Clubs)));
+        var hand = Cards("SA", "S8", "S2", "H2", "DA", "DK", "DJ", "D8", "D6", "CQ", "C8", "C5", "C2");
+
+        Assert.Equal(new Bid(4, Denomination.Spades), engine.DecideBid(Seat.South, hand, auction));
+        Assert.Equal("one-nt.minor-short.next-control", engine.LastConfiguredRuleId);
+    }
+
+    [Theory]
+    [InlineData(false, 5, Denomination.Hearts)]
+    [InlineData(true, 5, Denomination.Clubs)]
+    public void MinorTexas_BlackwoodCountsKeysInTransferredMinor(bool trumpKing, int level, Denomination denomination)
+    {
+        var engine = DeclarativeTexasEngine();
+        var auction = AuctionWithBids((Seat.North, new Bid(1, Denomination.NoTrump)),
+            (Seat.South, new Bid(3, Denomination.Clubs)), (Seat.North, new Bid(3, Denomination.Diamonds)),
+            (Seat.South, new Bid(3, Denomination.Hearts)), (Seat.North, new Bid(4, Denomination.Clubs)),
+            (Seat.South, new Bid(4, Denomination.Spades)), (Seat.North, new Bid(4, Denomination.NoTrump)));
+        var hand = Cards("SA", "S8", "S2", "H2", "DA", trumpKing ? "DK" : "D9", "DJ", "D8", "D6", "CQ", "C8", "C5", "C2");
+
+        Assert.Equal(new Bid(level, denomination), engine.DecideBid(Seat.South, hand, auction));
+    }
+
+    [Fact]
+    public void MinorTexas_NoFitWithStopper_ReturnsToThreeNoTrump()
+    {
+        var engine = DeclarativeTexasEngine();
+        var auction = AuctionWithBids((Seat.North, new Bid(1, Denomination.NoTrump)),
+            (Seat.South, new Bid(3, Denomination.Clubs)), (Seat.North, new Bid(3, Denomination.Diamonds)),
+            (Seat.South, new Bid(3, Denomination.Hearts)));
+
+        Assert.Equal(new Bid(3, Denomination.NoTrump), engine.DecideBid(Seat.North,
+            Cards("SA", "SK", "S2", "HA", "H8", "H5", "H2", "DQ", "D2", "CK", "C8", "C5", "C2"), auction));
+    }
+
+    [Fact]
+    public void MinorTexas_ClubFit_FourClubsIsSupportNotDiamondTransfer()
+    {
+        var engine = DeclarativeTexasEngine();
+        var auction = AuctionWithBids((Seat.North, new Bid(1, Denomination.NoTrump)),
+            (Seat.South, new Bid(2, Denomination.Spades)), (Seat.North, new Bid(3, Denomination.Clubs)),
+            (Seat.South, new Bid(3, Denomination.Hearts)));
+        var hand = Cards("SJ", "S8", "S2", "HA", "H8", "H2", "DQ", "D8", "D2", "CA", "CK", "CQ", "C2");
+        var call = engine.DecideCall(Seat.North, hand, auction);
+
+        Assert.Equal(new Bid(4, Denomination.Clubs), call.Bid);
+        Assert.Equal("one-nt.minor-short.opener-support", engine.ExplainCall(Seat.North, hand, auction.Calls, call).RuleId);
+    }
+
+    [Fact]
+    public void MinorTexas_BlackwoodConclusion_RemainsInDiamonds()
+    {
+        var engine = DeclarativeTexasEngine();
+        var auction = AuctionWithBids((Seat.North, new Bid(1, Denomination.NoTrump)),
+            (Seat.South, new Bid(3, Denomination.Clubs)), (Seat.North, new Bid(3, Denomination.Diamonds)),
+            (Seat.South, new Bid(3, Denomination.Hearts)), (Seat.North, new Bid(4, Denomination.Clubs)),
+            (Seat.South, new Bid(4, Denomination.Spades)), (Seat.North, new Bid(4, Denomination.NoTrump)),
+            (Seat.South, new Bid(5, Denomination.Hearts)));
+
+        Assert.Equal(new Bid(6, Denomination.Diamonds), engine.DecideBid(Seat.North,
+            Cards("SA", "SK", "S2", "H8", "H5", "H2", "DK", "DQ", "D2", "CA", "C8", "C5", "C2"), auction));
+    }
+
+    [Fact]
+    public void MinorTexas_PassTooltipDoesNotHideGameForcingAgreement()
+    {
+        var engine = DeclarativeTexasEngine();
+        var auction = AuctionWithBids((Seat.North, new Bid(1, Denomination.NoTrump)),
+            (Seat.South, new Bid(3, Denomination.Clubs)), (Seat.North, new Bid(3, Denomination.Diamonds)),
+            (Seat.South, new Bid(3, Denomination.Hearts)), (Seat.North, new Bid(4, Denomination.Clubs)));
+        var explanation = engine.ExplainCall(Seat.South,
+            Cards("SQ", "S8", "S2", "H2", "DA", "DQ", "DJ", "D8", "D6", "D2", "CQ", "C8", "C2"),
+            auction.Calls, new AuctionCall(Seat.South, AuctionAction.Pass));
+
+        Assert.Equal("pass-forcing", explanation.RuleId);
+        Assert.Contains("forcing de manche", Bridge.Desktop.AuctionTooltipRules.Get(explanation.RuleId, explanation.Values));
+    }
+
+    private static SefBiddingEngine DeclarativeTexasEngine() => new(profile: BiddingProfile.Load(
+        Path.Combine(AppContext.BaseDirectory, "sef-bidding-profile.json")));
+
     // --- Aides ---
 
     private static List<Card> Cards(params string[] cards) => cards.Select(Parse).ToList();

@@ -5,16 +5,16 @@ using Bridge.Core.Models;
 /// <summary>Chapitre SEF : deuxième enchère du répondant (dont suites de Stayman et Texas).</summary>
 public sealed partial class SefBiddingEngine
 {
-    private static Bid? ResponderRebid(HandEvaluation hand, Bid opening, Bid response, Bid openerRebid,
+    private Bid? ResponderRebid(HandEvaluation hand, Bid opening, Bid response, Bid openerRebid,
         bool thirdOrFourthSeat = false)
     {
         if (opening.Denomination == Denomination.NoTrump && opening.Level is 1 or 2)
         {
             var staymanLevel = opening.Level == 1 ? 2 : 3;
-            if (response == new Bid(staymanLevel, Denomination.Clubs))
+            if (Profile.Conventions.Stayman && response == new Bid(staymanLevel, Denomination.Clubs))
                 return AfterStayman(hand, openerRebid, staymanLevel, NoTrumpOpenerMinimum(opening));
             if (opening.Level == 2 && openerRebid == new Bid(3, Denomination.NoTrump) &&
-                TexasTarget(response, 2).HasValue)
+                EnabledTexasTarget(response, 2).HasValue)
                 return null;
             return AfterTexas(hand, response, opening.Level);
         }
@@ -24,7 +24,7 @@ public sealed partial class SefBiddingEngine
             var gameForcing = opening.Denomination == Denomination.Diamonds;
             if (openerRebid.Denomination == Denomination.NoTrump)
             {
-                var bid = RespondToTwoNoTrump(hand, gameForcing);
+                var bid = RespondToTwoNoTrump(hand, gameForcing, useProfile: false);
                 // 2♦ est forcing de manche : jamais de passe avant la manche.
                 if (bid is null && gameForcing) return new Bid(3, Denomination.NoTrump);
                 return bid;
@@ -356,9 +356,10 @@ public sealed partial class SefBiddingEngine
         return CheapestBid(otherMajor, openerRebid);
     }
 
-    private static Bid AfterStayman(HandEvaluation hand, Bid answer, int level, int openerMinimum)
+    private Bid AfterStayman(HandEvaluation hand, Bid answer, int level, int openerMinimum, bool useProfile = true)
     {
         var h = hand.HighCardPoints;
+        var gameMinimum = useProfile && level == 2 ? Profile.Responses.GameMinimumHL : 10;
         if (answer == new Bid(2, Denomination.NoTrump))
         {
             if (hand.SuitLength(Suit.Hearts) >= 5) return new(level + 1, Denomination.Clubs);
@@ -397,7 +398,9 @@ public sealed partial class SefBiddingEngine
         var combined = openerMinimum + (fit.HasValue ? hand.TotalPoints : hand.HonorLengthPoints);
         // Un grand chelem ne doit jamais être conclu automatiquement sur un simple
         // total de points : il exige une séquence de contrôles explicite.
-        if (combined >= 33) return new(6, denomination);
+        if (useProfile && level == 2
+            ? combined >= openerMinimum + Profile.Responses.SmallSlamMinimumHL
+            : combined >= 33) return new(6, denomination);
 
         // Chassé-croisé : bicolore majeur 5-4 quand l'ouvreur n'a pas de majeure quatrième.
         if (level == 2 && answer.Denomination == Denomination.Diamonds)
@@ -408,23 +411,24 @@ public sealed partial class SefBiddingEngine
             {
                 var four = five == Suit.Hearts ? Suit.Spades : Suit.Hearts;
                 if (hand.SuitLength(four) >= 4)
-                    return h >= 10
+                    return h >= gameMinimum
                         ? new(3, ToDenomination(four))       // saut forcing, recherche du fit 5-3
                         : new(2, ToDenomination(five.Value)); // majeure cinquième, non forcing
             }
         }
 
-        if (fit.HasValue) return new(h >= 10 || level == 3 ? 4 : 3, denomination);
-        return new(h >= 10 || level == 3 ? 3 : 2, Denomination.NoTrump);
+        if (fit.HasValue) return new(h >= gameMinimum || level == 3 ? 4 : 3, denomination);
+        return new(h >= gameMinimum || level == 3 ? 3 : 2, Denomination.NoTrump);
     }
 
-    private static Bid? AfterTexas(HandEvaluation hand, Bid response, int openingLevel)
+    private Bid? AfterTexas(HandEvaluation hand, Bid response, int openingLevel)
     {
-        var target = TexasTarget(response, openingLevel);
+        var target = EnabledTexasTarget(response, openingLevel);
         if (!target.HasValue) return null;
         if (openingLevel == 2) return new(4, target.Value);
         var hl = hand.HonorLengthPoints;
-        if (hl <= 8) return null;
+        var settings = Profile.Responses;
+        if (hl <= settings.InvitationMinimumHL) return null;
 
         if (target is Denomination.Hearts or Denomination.Spades)
         {
@@ -438,11 +442,11 @@ public sealed partial class SefBiddingEngine
                     .FirstOrDefault();
                 if (shortSuit.HasValue && FitPoints(hand, major, 2) is >= 15 and <= 17)
                     return new(4, ToDenomination(shortSuit.Value));
-                if (hl >= 10) return new(4, target.Value);
+                if (hl >= settings.GameMinimumHL) return new(4, target.Value);
                 return new(3, target.Value);
             }
 
-            if (hl is >= 16 and <= 17)
+            if (hl >= settings.SmallSlamInvitationMinimumHL && hl < settings.SmallSlamMinimumHL)
             {
                 Suit? shortSuit = Enum.GetValues<Suit>()
                     .Where(suit => suit != major && hand.SuitLength(suit) <= 1)
@@ -453,7 +457,8 @@ public sealed partial class SefBiddingEngine
             }
         }
 
-        if (hl is >= 16 and <= 17 && target is Denomination.Clubs or Denomination.Diamonds)
+        if (hl >= settings.SmallSlamInvitationMinimumHL && hl < settings.SmallSlamMinimumHL &&
+            target is Denomination.Clubs or Denomination.Diamonds)
             return new(4, Denomination.NoTrump);
 
         var noTrump = RespondToOneNoTrump(hand);
@@ -461,7 +466,7 @@ public sealed partial class SefBiddingEngine
 
         // Bicolore majeur 5-5 après Texas ♠ : 4♥ en manche, 3♥ en zone de chelem.
         if (target == Denomination.Spades && hand.SuitLength(Suit.Hearts) >= 5)
-            return new(hl >= 16 ? 3 : 4, Denomination.Hearts);
+            return new(hl >= settings.SmallSlamInvitationMinimumHL ? 3 : 4, Denomination.Hearts);
         if (target is Denomination.Clubs or Denomination.Diamonds)
         {
             Suit? shortSuit = Enum.GetValues<Suit>()
@@ -488,4 +493,15 @@ public sealed partial class SefBiddingEngine
         (2, { Level: 4, Denomination: Denomination.Clubs }) => Denomination.Diamonds,
         _ => null
     };
+
+    private Denomination? EnabledTexasTarget(Bid response, int openingLevel)
+    {
+        var target = TexasTarget(response, openingLevel);
+        return target switch
+        {
+            Denomination.Hearts or Denomination.Spades when Profile.Conventions.MajorTransfers => target,
+            Denomination.Clubs or Denomination.Diamonds when Profile.Conventions.MinorTransfers => target,
+            _ => null
+        };
+    }
 }

@@ -1,6 +1,7 @@
 1- Classification et évaluation des mains - Loi des atouts
 ** Types de mains
 *Mains régulières : pas de chicane, pas de singleton et au maximum un doubleton (4-3-3-3,4-4-3-2,5-3-3-2)
+*Mains semi-régulières : exactement deux doubletons, sans singleton ni chicane (5-4-2-2,6-3-2-2)
 *Mains unicolores : une couleur au moins 6em pas d'autre couleur au moins 4em (6-3-2-2,6-3-3-1,7-3-2-1,...)
 *Mains bicolores : une couleur au moins cinquième et une seule autre couleur au moins quatrième (5-4-2-2,5-4-3-1,6-4-2-1,...)
 ** Modes d'évaluation des mains
@@ -303,7 +304,7 @@ montre une mineure maitresse de 7 cartes et au pplus une dame annexe
 -Developpement dans le silence adverse :
 pass si meilleur contrat
 4C ou 5C demande de passer ou de corriger à carreau
-4D forcing demande de nommer la courte (4C = courte en mineure, 4SA = absence de courte)
+4D forcing demande de nommer la courte (5C = courte en mineure, 4SA = absence de courte)
 4H et 4S = arrets formels
 
 
@@ -376,3 +377,233 @@ Les sauts à la manche ou au chelem sont des conclusions formelles
 Voir l'ouverture 2SA. Seule différence, pas de minimum sur texas et stayman
 * Après une intervention.
 Plus de réponse à l'AS
+
+7- La redemande de l'ouvreur
+** En face d'un soutien majeur
+* En face d'un soutien majeur simple
+-l'enchère au palier 3 est un barrage fondé sur la loi des atouts
+-l'annonce d'une nouvelle couleur est une enchère d'essai naturelle pour la manche utilisée avec une couleur nécessitant un appui
+-2SA est une enchère d'essai généralisé pour la manche ou le chelem
+-Le contre de l'ouvreur est punitif sauf s'il est produit sur un soutien adverse au palier 2 ou 3, ou que l'enchère du n°4 ne laisse plus d'espace pour une enchère d'essai
+-La surenchère dans la majeur au palier 3 n'est pas une proposition de manche
+*En face de 2SA fitté
+-L'annonce de la majeure au palier 3 ou 4 est une conclusion
+-l'annonce d'une mineure est naturelle et montre un espoir de chelem
+-l'annonce de l'autre majeure est forcing de manche en quête d'un fit 4-4. Le chelem n'est pas exclu
+-3SA propose de jouer ce contrat avec un jeu régulier non minimum et des honneurs dans les couleurs courtes
+*En face d'un soutien majeur au palier 3
+L'ouvreur conclut en passant ou en nommant la manche. Tout autre enchère montre une ambition de chelem. Une nouvelle couleur au palier 4 est un contrôle
+*En face de 3SA fitté
+L'ouvreur conclut à la manche sans ambition de chelem, sinon il nomme son premier contrôle
+** En face d'un soutien mineur
+-En deçà de 3SA : enchère dirigée vers 3SA montrant une force dans la couleur annoncé
+-Au-delà de 3SA : une nouvelle couleur est un contrôle en vue d'un chelem à l'atout
+-l'enchère de 3 dans la mineur n'est pas une proposition après un soutien simple
+**L'expression d'un soutien
+*En face d'une réponse majeur au palier 1
+-Les soutiens naturels directs sont non forcing et promettent quatre atouts. Au palier 2 : 12-16HLD. Au palier 3 : 17-19HLD. Au palier 4 : 17-19H et une distribution 5-4-2-2
+-Les soutiens artificiels sont les suivants : 3SA : 18-19H réguliers ; Une nouvelles couleurs à double saut : Splinter (une courte et 20-21HLD) ; Un super forcing dans la couleur résiduelle : 22HLD et une courte dans la dernière couleur ; Répétition à double saut de la mineur d'ouverture : 6 cartes dans la couelur, 4 cartes dans la couleur du partenaire et 20-22HLD
+En enchère compétitive
+-Le soutien simple peut être peut-être effectué si nécessaire à un palier (et un seul) au dessus de ce qu'il aurait été dans le silence adverse
+-Le soutien à saut montre une bonne irrégulière de première zones
+-Le soutien à double saut montre une main de première zone irrégulière (souvent 6-4)
+-le cuebid promet une main forte (si le n°4 a parlé)
+-3SA montre l'envie de jouer ce contrat avec une main irrégulière et non fittée
+-double saut dans une nouvelle couleur après un contre d'appel adverse ou une intervention adverse est un splinter.
+-simple saut dans une couleur chère est un splinter
+-simple saut dans une couleur économique est naturel de bicolore forcing de manche
+*Après 1C passe 1D
+-soutien simple : 12-14H irrégulier
+-soutien à saut : 15-17H irrégulier
+-3H et 3S sont splinters
+*En face d'une réponse mineure au palier 2
+Les soutiens promettent un minimum de quatre cartes et sont forcing de manche sans intervention
+-soutien simple : 12-16H (soit 15-19HLD)
+-soutien à saut : 5-5 à honneurs concentrés d'au moins 15H (soit 20HLD)
+-en enchère compétitive, le soutien de la couleur de réponse est non forcing, avec un soutien fort l'ouvreur utilise le cuebid
+*Après 1S-2H
+-soutien simple promet 3 atouts et 15HLD non forcing après intervention adverse
+-soutien à 4H promet 12-14H (soit 17-19HLD) et un jeu 5-4-2-2 (ou un gros honneur sec)
+-splinter à 4C et 4D promettent 15-17H (soit 20-22HLD) quatre atout et un singleton ou chicane dans la couleur annoncée
+-Avec une main minimale et trois atouts l'ouvreur répère les piques puis soutien les coeurs exemple : 1S 2H 2S 2SA 3H
+**Les redemandes à SA dans le silence adverse
+* la redemande 1SA après changement de couleur au palier 1
+promet une main régulière ou semi régulière de 12-14H sans majeure quatrième annoncable au palier 1
+* La redemande à 2SA à saut
+18-19HL dénie une majeure quatrième annoncable au palier 1
+* La redemande à 2SA sans saut
+-Après la réponse 1SA : 15-17H irrégulier ou 17-18H régulier
+-Après une réponse au palier 2
+Après une ouverture majeure, la redemande 2SA montre une main régulière de 15-17h
+Après une ouverture de 1D, la redemande 2SA est appelée "mini-maxi" et montre une main régulière de 12-14H ou 18-19H
+*La redemande 3SA
+Montre un jeu régulier de 18-19H lorsque la redemande à 2SA ne couvrait pas la zone
+**Les redemandes à la couleur dans le silence adverse sans fit
+*Le 1 sur 1
+nommer une nouvelle couleur au palier 1 promet quatre cartes et 12-19HL, non forcing et ne précise pas la distribution
+*Les bicolores
+Pour qu'une séquence décrive une main bicolore, il faut que les deux couleurs soient annoncés à des paliers différents. Un bicolore est dit "économique" lorsque l'annonce de la deuxième couleurest au-dessous de la répétition de la première couleur sans saut. Lorsque l'annonce de la deuxième couleur dépasse la répétition de la première couleur, le bicolore est dit "cher"
+-bicolore économique : après une réponse au palier 1, y compris 1SA : 12-19HL, non forcing ; après un changement de couleur au palier 2 : forcing un tour et illimité
+-bicolore à saut : toujours forcing de manche ; après une réponse au palier 1 : 20-23HL ; après une réponse au palier 2 : 17-23HL et un bicolore 5-5 à honneurs concentrés
+-bicolore cher : toujours forcing ; après une réponse à la couleur au palier 1 : 18-23HL forcing un tour, non forcing de manche ; après 1SA : 18-23HL forcing de manche ; après un changement de couleur au palier 2 : 17+HL forcing de manche
+*répétition de la couleur d'ouverture
+-répétition sans saut : après le palier 1 : 13-17HL non forcing, promet cinq cartes, six en face de 1SA ou si la couleur de réponse était collée à la couleur d'ouverture ; après une réponse au palier 2 : au moins cinq cartes, forcing un tour
+-répétition à saut : promet 6 cartes et 17+HL. Non forcing après 1sur1 forcing après 2 sur 1
+ **Les redemandes en enchères compétitives
+ Après intervention, les redemandes de l'ouvreur sont peu modifiées. Néanmoins, il faut distinguer le cas ou le répondant a fait la dernière enchère forcing (on parle alors de redemande forcée) et le cas où le joueur n°4 a produit la dernière enchère (enchère libre).
+ *Les redemandes forcées
+ -1SA promet 12-14H mais ne garantit pas l'arrêt
+ -2SA promet le même nombre de point que dans le silence adverse mais garantit l'arrêt
+ -nouvelle couleur au palier 1 : comme dans le silence adverse
+ -nouvelle couleur au palier 2 : si l'annonce ne dépasse pas le palier de répétition de la couleur d'ouverture, il ne s'agit pas d'un bicolore cher. Dans le cas contraire, l'ouvreur montre un jeu bicolore et une main agréable.
+ -nouvelle couleur à saut est forcing de manche comme dans le silence adverse
+ -le cuebid : Enchère par défaut ne garantissant pas le fit et montrant une main forte sans enchère naturelle. Forcing de manche
+ *Les redemandes libres
+ l'ouvreur ne se manifestera librement qu'avec une plus value de force ou de distribution puisque son partenaire aura à nouveau la parole.
+ -l'annonce d'une couleur au palier 1 décrit une main irrégulière
+ -bicolore économique ne nécessite aucun supplément de force en cas de distribution 5-5
+ -quand l'annonce de la nouvelle couleur conduit le camp au palier de 3 dans la couleur d'ouverture, elle montre toujours une main forte
+ -répétition de la couleur d'ouverture : garantit six cartes, elles ne requiert pas de supplément de force au palier de 2
+ -le cuebid : garantit un fit de quatre cartes dans la couleur du répondant et une main forte
+ -Toutes les mains dont la force ou la distribution réclame une action : en absence d'enchère adaptée : contre
+
+ Face à une contre spoutnik, tous les principes restent valables. La zone de point de l'ouvreur doit seulement être adaptée à la force promise par le Contre.
+
+8- La deuxième enchère du répondant
+** Après un soutien majeur 
+* Après un soutien majeur simple (1C 1S 2S ?)
+En face d'un soutien majeur au palier 2
+- Le soutien de la couleur d'ouverture est une enchère d'essai naturelle pour la manche et le chelem
+- Une nouvelle couleur est une enchère d'essai naturelle limitée à la manche avec une couleur nécessitant un complément
+- 2SA est une enchère d'essai généralisé pour la manche ou le chelem
+* Après un soutien majeur à saut (1C 1S 3S ?)
+Après un soutien au palier 3, une nouvelle enchère est une enchère de control.
+Les controles se nomment dans l'ordre en commencant par le plus économique exprimable. Sauter un controle le dénie donc.
+Une fois la procédure des contrôles entamée, l'annonce de la manche majeure n'est jamais une enchère forcing
+**Après un soutien mineur  (1C 1D 3D ?)
+Toute enchère sous le palier de 3SA doit d'abord être interprétée comme orientée vers ce contrat, elle indique une force d'honneur.
+Par exemple dans 1C 1D 3D 3H, 3H indique un arrêt à coeur en vu de jouer 3SA et non un contrôle à coeur en vue du chelem. Ce n'est qu'une fois 3SA dépassé qu'une nouvelle couleur est un control en vu d'un chelem
+**Après une redemande à 1SA
+*Les enchère naturel
+- Les enchère économique au palier de 2, excepté 2C sont naturelles et dénient tout espoir de manche
+2D montre 5H/S et 5D après 1C 1H/S 1SA ; 4H/4S et 4+D après 1D 1H/S 1SA ; 4S et 5+D après 1H 1S 1SA
+2H après la réponse 1S montre 5+S et 4+H
+La répétition de la majeure de réponse ne promet que 5 cartes dans la couleur
+Les enchères au palier de 3 sont natuelles et forcing de manche. 3 dans le mineure d'ouverture montre le plus souvent 5 cartes et exactement 4 cartes dans la majeure de réponse. L'enchère promet sauf espoir de chelem, un singleton ou chicane. 3 dans la majeur d'ouverture montre un espoir de chelem. 3 dans une nouvelle couleur promet un beau 5-5.3 dans la majeur de réponse promet 6 cartes et un espoir de chelem
+Le saut à quatre coeur après la réponse de 1S montre un bicolore au moins 5-5 limité à la manche
+Les enchères à SA sont quantitative. Elles dénient cinq cartes dans la majeure de réponse. Le répondant pass jusqu'à 10HL. 2SA promet 11-12HL ; 3SA promet 13-18HL
+*Le roudi
+Après une réponse majeure au palier 1 et une redemande à 1SA de l'ouvreur, 2C est une enchère conventionelle appelée "Roudi 3 réponse". Cette enchère décrit un espoir de manche ou plus, elle promet au moins cinq cartes dans la majeure du répondant.
+Les réponses sont :
+-2C deux cartes dans la majeure de réponse
+-2H trois cartes dans la majeure de réponse, minimum
+-2S trois cartes dans la majeure de réponse, maximum
+Après un roudi, toute enchère au palier 3 du répondant est forcing de manche à l'exception de la répétition de la majeure. Les enchère au palier 2 sont non forcing
+**Après une redemande à 2SA sans saut
+Après une réponse à la couleur au palier 1, un saut de l'ouveur à 2SA est non forcing et promet 18-19H réguliers sans quatre cartes dans la couleur de réponse et sans majeure quatrième annoncable au palier 1. En face d'une redemande à 2SA, toute nouvelle enchère du répondant est forcing de manche.
+*Le relai dans l'autre mineure : l'annonce d'une autre mineure au palier 3 est un relais demandant à l'ouvreur si il a trois cartes dans le majeure de réponse ou quatre cartes dans l'autre majeure si celle-ci n'a pas été déniée. Les réponses à ce relais sont naturelles, l'ouvreur renseignant prioritairement son partenaire sur les coeurs puis les piques.
+*Les aures enchères :
+- le soutient simple de la mienure ouverture : enchère naturelle et forcing de manche qui promet un singleton ou une chicane annexe à moins d'avoir un espoir de chelem. Les enchères se poursuivrent par l'expression de forces d'honneurs au palier 3 dans l'optique d'une manche à SA.
+- la répétition de la majeure de réponse : promet 6 cartes. Elle montre une ambition de chelem au palier de 3 et constitue une conclusion au palier de 4.
+- La séquence 1C/D 1S 2SA 3H promet 5+S et 5+H avec une ambition de chelem
+- La séquence 1C/D 1S 2SA 4H promet 5+S et 5+H et demande à l'ouvreur de choisir entre pass ou 4S.
+**Après une redemande à 2SA à saut
+Les enchères sont naturelles et forcing de manche
+**Après une redemande à la couleur au palier de 1.
+Le répondant doit
+* Pass avec trois ou quatre cartes dans la seconde couleur de l'ouvreur et 5-6HL
+* soutenir la mineure d'ouverture au palier 2 avec 6-10H ; au palier 3 avec 12+H et une main irrégulière snas cinq cartes dans la majeure de réponse eventuelle
+* soutenir la majeur de l'ouvreur au palier 2 avec 6-10HLD ; au palier 3 avec 11-12HLD ; au palier 3 avec 13-15HLD ; par le biais d'un splinter avec 13-15HLD et une courte dans la couleur nommée
+* répéter sa couleur au palier 2 avec 6-10HL et six cartes ; au palier 3 avec 11-12HL et six belles cartes
+* nommer les SA au palier de 1 avec 6-10HL ; au palier 2 avec 11-12HL et l'arrêt dans la dernière couleur ; au palier 3 avec 12H  ou 13-15HL et l'arrêt dans la denière couleur
+* nommera la quatrième couleur : sans saut artidicelle à partir de 11H sans meilleur enchère ; avec un saut pour montrer un beau bicolore 5-5 forcing de manche
+**Après un bicolore économique
+* A la suite d'un changement de couleur 1 sur 1
+Le répondant
+- pass avec deux cartes de moins dans la première couleur de l'ouvreur que dans la seconde et 6-7HL voir 9HL si singleton dans la couleur d'ouverture.
+- donne une préférence en revenant au palier 2 sans la couleur d'ouverture avec au moins 2 cartes et 6-10HL
+- soutiendra la première couleur : si mineur au palier 3 promet jeu irrégulier ; si majeure au palier 3 pour espoir de chelem avec 16+HLD, au palier 4 avec 13-15HLD
+- soutiendra la seconde couleur, une mineur avec 11-12HLD et au moins 4 cartes (enchère non forcing)
+- nommera les SA : au palier 2 avec 10-11HL sans fit majeur ; au palier 3 avec 12H-15HL et l'arrêt
+- répetera sa couleur : au palier 2 avec6-10HL et six cartes ; au palier 3 avec 11-12HL et six cartes correctes
+- nommera la quatrième couleur forcing par défaut à partir de 11H ou 12HL, soit pour trouver le meilleur contrat (recherche d'un fit de trois cartes ou d'un arrêt), soit pour rendre la séquence forcing (avant un soutien de l'une des couleur de l'ouvreur, la répétition de la couleur de réponse)
+* A la suite d'une réponse 1SA
+Pour le répondant il est toujours possible de passer ou d'annoncer une préférence. Il peut aussi :
+- annoncer une couleur non déniée par la réponse 1SA au palier le plus bas.
+- annoncer une couleur à saut ou déniée par la réponse 1SA pour y exprimer une force d'honneurs, un fit long dans la seconde couleur de l'ouvreur et un jeu maximal de 9-10HL
+* A la suite d'un changement de couleur 2 sur 1 (1S 2C 2H ?)
+Le répondant
+- soutient une des couleurs de l'ouvreur au palier 3 en situation de forcing de manche
+- nommera les SA au palier 2 avec 11-12HL et l'arrêt dans la dernière couleur ; au palier 3 avec 12h-15HL, un jeu régulier et un arrêt dans la dernière couleur
+- répetera sa couleur au palier 3 avec 11-12HL et six cartes (enchère non forcing)
+- nommer la quatrième couleur forcing (artificielle) en situation de forcing de manche
+- donner une préférence pour la couleur d'ouverture au palier 2 par défaut avec 11-12HL et deux cartes exactement dans cette couleur
+**Après un bicolore cher
+Le bicolore cher étant auto forcing, le répondant n'est pas contraint de préciser sa force immédiatement.
+* A la suite d'un changement de couleur 1 sur 1
+- le soutien simple de l'une des couleurs de l'ouvreur est forcing de manche. Le soutien de la mineure d'ouverture promet un gros honneur troisième et quatre cartes.
+- le soutien au palier 4 d'une mineure de l'ouvreur montre un net espoir de chelem
+- le soutien au palier 4 d'une majeure de l'ouvreur dénie un espoir de chelem
+- 3SA montre 10-11H et l'arrêt dans la dernière couleur
+- la répétition de sa couleur par répondant : au palier 2 montre cinq carte, forcing ; au palier 3 montre six cartes et un espoir de chelem
+- 2SA modérateur montre un jeu minimum ne permettant pas d'imposer la manche si l'ouvreur est minimum
+- la quatrième forcing sert à la recherche d'arrêt dans la dernière couleur, dénie cinq cartes dans la majeure de réponse.
+* A la suite d'une réponse 2 sur 1
+Toutes les enchères sont forcing de manche. Toutes sont naturelles à l'exception de la quatrième couleur forcing.
+La quatrième couleur forcing impose une suite à la séquence quand le répondant n'a à sa disposition aucune autre enchère correspondant à son jeu.
+Les réponse par priorité à la quatrième couleur forcing :
+1- soutien de la couleur du répondant avec trois cartes (avec un saut 15-17H et un jeu irrégulier ; sans saut dans les autres cas 12-19H)
+2- L'expression d'un bicolore de dix cartes par la répétition d'une des deux couleurs
+3- le soutien de la quatrième couleur : l'As troisième et 14+H si mineur ou quatre cartes si majeur non déniée
+4- l'annonce des SA avec l'arrêt dans la dernière couleur
+5- l'emploi d'une enchère poubelle consistant le plus souvent à répéter l'une des deux couleurs
+** Après bicolore à saut
+* Enchère SA naturelle avec arrêt
+-2SA sans notion de force
+-3SA promet 10-11HL
+* répétition de la couleur promet cinq cartes
+* quatrième couleur forcing garde son sens artificiel, par défaut
+** Après une répétion simple de la couleur d'ouverture
+Le répondant répond par
+* soutien de la couleur de l'ouvreur
+- palier 3 après 1 sur 1 en situation non forcing
+- palier 3 après 2 sur 1 en situation forcing et espoir de chelem en majeure
+- palier 4 en situation non forcing, une main limité à la manche en majeure et un espoir de chelem en mineure
+* soutien à SA non forcing avec des arrêt dans les couleurs non nommées
+- 2SA promet 11-12HL
+- 3SA avec 13-15HL sans cinq cartes dans la couleur de réponse.
+* Par la répétition de sa couleur décrivant 6 cartes en situation non forcing
+- au palier 2 avec 6-10HL
+- au palier 3 avec 11-12HL et une couleur correcte
+* par une nouvelle couleur sans saut, forcing, avec au moins 10HL
+* une nouvelle couleur à saut est
+- après une ouverture majeure, un splinter promettant 4 atouts et 16-19HLD
+- après une ouverture mineure, un beau bicolore 5-5 et une main de manche
+** Après une répétion à saut de la mineure d'ouverture
+* soutien de l'ouvreur au palier 4 : espoir de chelem
+* 3SA garanti (demi-)arrêts dans les couleurs non nommées
+* répétition de la couleur par le répondant montre six cartes ou cinq belles cartes en situation forcing
+* nommer une nouvelle couleur montre une force dans l'optique d'une manche à SA
+** Après une répétion à saut de la majeure d'ouverture
+* le soutien au palier 4 est une conclusion
+* 3SA garanti (demi-)arrêts dans les couleurs non nommées
+* répétition de la couleur par le répondant montre six cartes ou cinq belles cartes en situation forcing
+* nommer une nouvelle couleur est un soutien-controle en vue de jouer le chelem
+ 
+ **Arbitrages du chapitre 7 validés le 18/10/2026
+-Les valeurs H explicitement données sont prioritaires ; les équivalences HLD entre parenthèses sont indicatives, pas des conditions supplémentaires.
+-Après soutien majeur simple : essai prioritaire à 17-19HLD, manche à 20+HLD. Couleur d'essai : au moins trois cartes et au plus un gros honneur ; à défaut 2SA. 3M est un barrage avec neuf atouts connus minimum, sous la zone d'essai (16HLD maximum), jamais une invitation.
+-Après 2SA fitté : 3M conclusif jusqu'à 14HLD ; manche à partir de 15HLD ; recherche de chelem à partir de 18HLD. L'autre majeure quatrième est recherchée à partir de 15HLD, forcing de manche. 3SA nécessite une main régulière non minimale et un arrêt dans chaque doubleton. Les accords après passe restent prioritaires.
+-Après 3M : passe jusqu'à 14HLD, manche à partir de 15HLD, contrôle de chelem à partir de 21HLD. Après 3SA fitté : manche sous 18HLD, premier contrôle à partir de 18HLD.
+-Après soutien mineur simple : passe sous 17HL, annonce de force vers 3SA à partir de 17HL ; contrôles au-delà de 3SA à partir de 20HLD.
+-Super-forcing : 22+HLD et au moins quatre atouts. 1C-1H-3D montre le résidu carreau et la courte à pique ; généralisation à 1C-1S-3D et 1D-1M-3C. Avec une courte dans l'autre mineure, faux bicolore à saut dans l'autre majeure puis soutien à la manche au tour suivant (par exemple 1C-1H-2S-une enchère-4H).
+-La répétition à double saut de la mineure d'ouverture, par exemple 1C-1H-4C, montre six cartes dans cette mineure, quatre atouts et 20-22HLD ; forcing de manche. Les traitements de super-forcing sont prioritaires dans les zones communes.
+-Avec quatre atouts et une main de 20+HLD ne remplissant aucun des soutiens artificiels spécifiques : faux bicolore à saut puis soutien à la manche, plutôt qu'un soutien direct à 4M.
+-Après 1C-1D, 3H et 3S splinters : 18+H sans plafond, quatre carreaux au moins, courte dans la couleur sautée.
+-Après 1S-2H : une main minimale (12-14H) avec exactement trois coeurs diffère toujours son soutien. Gros honneur sec : As, Roi ou Dame. Le soutien différé de l'exemple est bien 3H.
+-Les zones à SA sont conservées dans les unités indiquées : le 2SA à saut montre 18-19HL. Le mini-maxi 1D-2C-2SA (12-14H ou 18-19H réguliers) est forcing un tour.
+-Honneurs concentrés : au moins 75 % des points H dans les deux couleurs annoncées. Répétition à saut prioritaire dès 17HL et six cartes, y compris à la borne commune avec la répétition simple.
+-Compétition : première zone = 12-14H ; main forte = 18+HL ; bicolore cher forcé agréable = 17+HL ; action libre ordinaire = 15+HL, sauf économique 5-5 ou répétition sixième au palier 2 sans supplément. Les caractères forcing des bicolores restent ceux définis ci-dessus.
+-Soutien à saut compétitif de première zone : main irrégulière avec une courte et 13+HL. Soutien à double saut : distribution au moins 6-4. Le soutien simple ne peut monter que d'un palier supplémentaire.
+-Contre d'essai : 17-19HLD sur soutien adverse au palier 2/3, ou lorsque l'espace d'essai manque ; sinon contre punitif avec au moins deux levées défensives. Face au Sputnik, ajuster les seuils de la différence entre sa force minimale promise (8HL au palier 1, 10HL au-delà) et les 6HL de la réponse naturelle remplacée.
+-Force vers 3SA : As, Roi gardé ou Dame troisième. Contrôle : As, Roi, singleton ou chicane ; annoncer le moins cher légal sans dépasser inutilement la manche.

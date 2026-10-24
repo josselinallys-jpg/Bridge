@@ -5,7 +5,7 @@ using Bridge.Core.Models;
 /// <summary>Chapitre SEF : redemandes de l'ouvreur.</summary>
 public sealed partial class SefBiddingEngine
 {
-    private static Bid? OpenerRebid(HandEvaluation hand, Bid opening, Bid response, bool thirdOrFourthSeat = false)
+    private Bid? OpenerRebid(HandEvaluation hand, Bid opening, Bid response, bool thirdOrFourthSeat = false)
     {
         if (opening == new Bid(1, Denomination.NoTrump)) return OneNoTrumpRebid(hand, response);
         if (opening == new Bid(2, Denomination.NoTrump)) return TwoNoTrumpRebid(hand, response);
@@ -329,39 +329,40 @@ public sealed partial class SefBiddingEngine
         return null;
     }
 
-    private static Bid? OneNoTrumpRebid(HandEvaluation hand, Bid response) => response switch
+    private Bid? OneNoTrumpRebid(HandEvaluation hand, Bid response) => response switch
     {
-        { Level: 2, Denomination: Denomination.Clubs } => StaymanAnswer(hand, 2),
-        { Level: 2, Denomination: Denomination.Diamonds } => new(2, Denomination.Hearts),
-        { Level: 2, Denomination: Denomination.Hearts } => new(2, Denomination.Spades),
-        { Level: 2, Denomination: Denomination.Spades } => new(3, Denomination.Clubs),
-        { Level: 3, Denomination: Denomination.Clubs } => new(3, Denomination.Diamonds),
-        { Level: 2, Denomination: Denomination.NoTrump } when hand.HighCardPoints >= 17 => new(3, Denomination.NoTrump),
+        { Level: 2, Denomination: Denomination.Clubs } when Profile.Conventions.Stayman => StaymanAnswer(hand, 2),
+        { Level: 2, Denomination: Denomination.Diamonds } when Profile.Conventions.MajorTransfers => new(2, Denomination.Hearts),
+        { Level: 2, Denomination: Denomination.Hearts } when Profile.Conventions.MajorTransfers => new(2, Denomination.Spades),
+        { Level: 2, Denomination: Denomination.Spades } when Profile.Conventions.MinorTransfers => new(3, Denomination.Clubs),
+        { Level: 3, Denomination: Denomination.Clubs } when Profile.Conventions.MinorTransfers => new(3, Denomination.Diamonds),
+        { Level: 2, Denomination: Denomination.NoTrump } when hand.HighCardPoints >= Profile.OneNoTrump.Maximum => new(3, Denomination.NoTrump),
         // 4♦ conventionnel (bicolore majeur 5-5 de manche) : l'ouvreur choisit sa majeure.
-        { Level: 4, Denomination: Denomination.Diamonds } =>
+        { Level: 4, Denomination: Denomination.Diamonds } when Profile.Conventions.MajorTransfers =>
             hand.SuitLength(Suit.Spades) > hand.SuitLength(Suit.Hearts)
                 ? new(4, Denomination.Spades) : new(4, Denomination.Hearts),
         // 4SA quantitatif : l'ouvreur conclut à 6SA avec son maximum de 17H.
-        { Level: 4, Denomination: Denomination.NoTrump } when hand.HighCardPoints >= 17 => new(6, Denomination.NoTrump),
+        { Level: 4, Denomination: Denomination.NoTrump } when hand.HighCardPoints >= Profile.OneNoTrump.Maximum => new(6, Denomination.NoTrump),
         _ => null
     };
 
-    private static Bid? TwoNoTrumpRebid(HandEvaluation hand, Bid response)
+    private Bid? TwoNoTrumpRebid(HandEvaluation hand, Bid response, bool useProfile = true)
     {
-        if (response == new Bid(4, Denomination.Clubs)) return new(4, Denomination.Diamonds);
-        if (response == new Bid(4, Denomination.Diamonds))
+        var conventions = useProfile ? Profile.Conventions : new NoTrumpConventionSettings();
+        if (conventions.MinorTransfers && response == new Bid(4, Denomination.Clubs)) return new(4, Denomination.Diamonds);
+        if (conventions.MajorTransfers && response == new Bid(4, Denomination.Diamonds))
             return hand.SuitLength(Suit.Hearts) >= hand.SuitLength(Suit.Spades)
                 ? new(4, Denomination.Hearts) : new(4, Denomination.Spades);
 
         return response switch
         {
-            { Level: 3, Denomination: Denomination.Clubs } => StaymanAnswer(hand, 3),
-            { Level: 3, Denomination: Denomination.Diamonds } =>
+            { Level: 3, Denomination: Denomination.Clubs } when conventions.Stayman => StaymanAnswer(hand, 3),
+            { Level: 3, Denomination: Denomination.Diamonds } when conventions.MajorTransfers =>
                 hand.SuitLength(Suit.Hearts) >= 3 ? new(3, Denomination.Hearts) : new(3, Denomination.NoTrump),
-            { Level: 3, Denomination: Denomination.Hearts } =>
+            { Level: 3, Denomination: Denomination.Hearts } when conventions.MajorTransfers =>
                 hand.SuitLength(Suit.Spades) >= 3 ? new(3, Denomination.Spades) : new(3, Denomination.NoTrump),
-            { Level: 3, Denomination: Denomination.Spades } => new(4, Denomination.Clubs),
-            { Level: 4, Denomination: Denomination.NoTrump } when hand.HonorLengthPoints >= 21 =>
+            { Level: 3, Denomination: Denomination.Spades } when conventions.MinorTransfers => new(4, Denomination.Clubs),
+            { Level: 4, Denomination: Denomination.NoTrump } when hand.HonorLengthPoints >= (useProfile ? Profile.TwoNoTrump.Maximum : 21) =>
                 new(5, Denomination.NoTrump),
             _ => null
         };
@@ -378,7 +379,7 @@ public sealed partial class SefBiddingEngine
     }
 
     /// <summary>Deuxième redemande de l'ouvreur de 1SA après un Stayman (SEF : fiche 1SA).</summary>
-    private static Bid? StaymanContinuation(HandEvaluation hand, IReadOnlyList<Bid> bids)
+    private Bid? StaymanContinuation(HandEvaluation hand, IReadOnlyList<Bid> bids)
     {
         var answer = bids[2];
         var rebid = bids[3];
@@ -388,7 +389,7 @@ public sealed partial class SefBiddingEngine
             {
                 var major = rebid.Denomination == Denomination.Clubs ? Suit.Hearts : Suit.Spades;
                 if (hand.SuitLength(major) < 3) return new(3, Denomination.NoTrump);
-                return hand.HighCardPoints >= 17
+                return hand.HighCardPoints >= Profile.OneNoTrump.Maximum
                     ? new(4, ToDenomination(major))
                     : new(3, ToDenomination(major));
             }
@@ -415,14 +416,14 @@ public sealed partial class SefBiddingEngine
 
         // Invitations à SA : l'ouvreur accepte avec un maximum (17H).
         if (rebid == new Bid(2, Denomination.NoTrump))
-            return hand.HighCardPoints >= 17 ? new(3, Denomination.NoTrump) : null;
+            return hand.HighCardPoints >= Profile.OneNoTrump.Maximum ? new(3, Denomination.NoTrump) : null;
         if (rebid == new Bid(4, Denomination.NoTrump))
-            return hand.HighCardPoints >= 17 ? new(6, Denomination.NoTrump) : null;
+            return hand.HighCardPoints >= Profile.OneNoTrump.Maximum ? new(6, Denomination.NoTrump) : null;
         if (rebid.Denomination is Denomination.Hearts or Denomination.Spades)
         {
             // Soutien invitatif 3M après réponse 2M.
             if (answer.Denomination == rebid.Denomination && rebid.Level == 3)
-                return hand.HighCardPoints >= 17 ? new(4, rebid.Denomination) : null;
+                return hand.HighCardPoints >= Profile.OneNoTrump.Maximum ? new(4, rebid.Denomination) : null;
             if (answer == new Bid(2, Denomination.Diamonds))
             {
                 // Chassé-croisé : saut dans la majeure quatrième, la cinquième est l'autre majeure.
@@ -500,10 +501,10 @@ public sealed partial class SefBiddingEngine
         return CheapestBid(Denomination.NoTrump, response);
     }
 
-    private static int NoTrumpOpenerMinimum(Bid opening) => opening switch
+    private int NoTrumpOpenerMinimum(Bid opening) => opening switch
     {
-        { Level: 1, Denomination: Denomination.NoTrump } => 15,
-        { Level: 2, Denomination: Denomination.NoTrump } => 20,
+        { Level: 1, Denomination: Denomination.NoTrump } => Profile.OneNoTrump.Minimum,
+        { Level: 2, Denomination: Denomination.NoTrump } => Profile.TwoNoTrump.Minimum,
         { Level: 2, Denomination: Denomination.Clubs } => 22,
         _ => 24
     };

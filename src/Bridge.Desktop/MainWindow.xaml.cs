@@ -49,7 +49,7 @@ public partial class MainWindow : Window, INotifyPropertyChanged
         InitializeComponent();
         _logger = new ConsoleFileLogger("logs", LogLevel.Information);
         LoggerProvider.SetLogger(_logger);
-        _biddingEngine = new SefBiddingEngine(_logger);
+        _biddingEngine = new SefBiddingEngine(_logger, BiddingProfile.LoadForApplication());
         _bridgeEngine = new BridgeGameEngine(
             _biddingEngine,
             new ContractAwareCardPlayAi(_logger),
@@ -155,6 +155,7 @@ public partial class MainWindow : Window, INotifyPropertyChanged
         var version = ++_dealVersion;
         _boardNumber++;
         _vulnerability = VulnerabilityExtensions.ForBoard(_boardNumber);
+        _biddingEngine.Vulnerability = _vulnerability;
         _deal = Deal.Create(_random);
         _initialDeal = _deal.Clone();
         _auction = new Auction();
@@ -197,6 +198,11 @@ public partial class MainWindow : Window, INotifyPropertyChanged
             StatusText = "Cette enchère ne dépasse pas le contrat actuel.";
             return;
         }
+        if (!bid.HasValue && _auction.ForcingFor(Seat.North) != AuctionForcing.None)
+        {
+            StatusText = "Cette séquence est forcing : vous devez enchérir.";
+            return;
+        }
 
         _isBusy = true;
         AddAuctionCall(new AuctionCall(Seat.North, bid.HasValue ? AuctionAction.Bid : AuctionAction.Pass, bid));
@@ -207,7 +213,16 @@ public partial class MainWindow : Window, INotifyPropertyChanged
 
     private async Task SubmitHumanActionAsync(AuctionAction action)
     {
-        if (_isBusy || _phase != GamePhase.Bidding || _currentBidder != Seat.North || _auction is null ||
+        if (_isBusy || _phase != GamePhase.Bidding || _currentBidder != Seat.North || _auction is null)
+        {
+            return;
+        }
+        if (_auction.ForcingFor(Seat.North) != AuctionForcing.None)
+        {
+            StatusText = "Cette séquence est forcing : vous devez enchérir.";
+            return;
+        }
+        if (
             action == AuctionAction.Double && !_auction.CanDouble(Seat.North) ||
             action == AuctionAction.Redouble && !_auction.CanRedouble(Seat.North))
         {
@@ -536,6 +551,8 @@ public partial class MainWindow : Window, INotifyPropertyChanged
         }
 
         var previousCalls = _auction.Calls.ToList();
+        if (_deal is not null)
+            call = _biddingEngine.AnnotateCall(call.Seat, _deal[call.Seat], previousCalls, call);
         _auction.AddCall(call);
         var text = CallText(call);
         AuctionCalls.Add(new AuctionItem(SeatName(call.Seat), text, CallBrush(call),
@@ -821,6 +838,26 @@ public partial class MainWindow : Window, INotifyPropertyChanged
             .GroupBy(call => call.Bid!.Value.Denomination)
             .Any(group => group.Key != Denomination.NoTrump && group.Count() >= 2);
 
+    public string PassRule => ActionRule(AuctionAction.Pass);
+    public string DoubleRule => ActionRule(AuctionAction.Double);
+    public string RedoubleRule => ActionRule(AuctionAction.Redouble);
+
+    private string ActionRule(AuctionAction action)
+    {
+        if (_auction is not null && _deal is not null && !_auction.IsComplete)
+        {
+            if (action == AuctionAction.Double && !_auction.CanDouble(Seat.North))
+                return "Contre indisponible dans cette situation.";
+            if (action == AuctionAction.Redouble && !_auction.CanRedouble(Seat.North))
+                return "Surcontre indisponible dans cette situation.";
+            return ExplainCallText(new AuctionCall(Seat.North, action), _auction.Calls, _deal[Seat.North]);
+        }
+        return AuctionTooltipRules.Get(action switch
+        {
+            AuctionAction.Pass => "pass", AuctionAction.Double => "double", _ => "redouble"
+        });
+    }
+
     private void CreateBidOptions()
     {
         for (var level = 1; level <= 7; level++)
@@ -852,6 +889,9 @@ public partial class MainWindow : Window, INotifyPropertyChanged
         OnPropertyChanged(nameof(ReplayButtonText));
         OnPropertyChanged(nameof(CanDouble));
         OnPropertyChanged(nameof(CanRedouble));
+        OnPropertyChanged(nameof(PassRule));
+        OnPropertyChanged(nameof(DoubleRule));
+        OnPropertyChanged(nameof(RedoubleRule));
         ActivityList.ScrollIntoView(Activity.LastOrDefault());
     }
 

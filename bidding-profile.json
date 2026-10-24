@@ -1,0 +1,30 @@
+{
+  "schemaVersion": 1,
+  "id": "sef-standard",
+  "oneNoTrump": {
+    "minimum": 15,
+    "maximum": 17,
+    "allowFiveCardMajor": true
+  },
+  "twoNoTrump": {
+    "minimum": 20,
+    "maximum": 21,
+    "allowFiveCardMajor": false
+  },
+  "conventions": {
+    "stayman": true,
+    "staymanMinimumHL": 8,
+    "twoNoTrumpStaymanMinimumHL": 4,
+    "majorTransfers": true,
+    "minorTransfers": true
+  },
+  "responses": {
+    "invitationMinimumHL": 8,
+    "gameMinimumHL": 10,
+    "smallSlamInvitationMinimumHL": 16,
+    "smallSlamMinimumHL": 18,
+    "grandSlamInvitationMinimumHL": 20,
+    "grandSlamMinimumHL": 22,
+    "maximumHL": 25
+  }
+}

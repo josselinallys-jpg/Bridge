@@ -154,6 +154,75 @@ public sealed class SefPreemptTests
             _engine.DecideBid(Seat.North, opener, auction));
     }
 
+    [Fact]
+    public void StrictProfile_GamblingShortnessAskDoesNotRequireSixteenHonors()
+    {
+        var engine = StrictSefEngine();
+        var auction = new Auction();
+        auction.AddCall(Seat.North, new Bid(3, Denomination.NoTrump));
+        auction.AddCall(Seat.East, AuctionAction.Pass);
+        var responder = Cards("S2 S3 S4 S5 H2 H3 H4 D2 D3 D4 C2 C3 C4");
+
+        Assert.Equal(new Bid(4, Denomination.Diamonds), engine.DecideBid(Seat.South, responder, auction));
+    }
+
+    [Fact]
+    public void StrictProfile_Gambling4DRelayShowsMinorShortnessAtFiveClubs()
+    {
+        var engine = StrictSefEngine();
+        var auction = new Auction();
+        auction.AddCall(Seat.North, new Bid(3, Denomination.NoTrump));
+        auction.AddCall(Seat.East, new Bid(4, Denomination.Diamonds));
+        auction.AddCall(Seat.South, AuctionAction.Pass);
+        auction.AddCall(Seat.West, AuctionAction.Pass);
+        var opener = Cards("SA S8 S6 S4 S2 H8 H6 H4 H2 D8 D6 D4 C2");
+
+        Assert.Equal(new Bid(5, Denomination.Clubs), engine.DecideBid(Seat.North, opener, auction));
+        Assert.Equal("gambling.relay.shortness-minor", engine.LastConfiguredRuleId);
+    }
+
+    [Fact]
+    public void StrictProfile_Gambling4DRelayShowsMajorShortnessAtFourMajor()
+    {
+        var engine = StrictSefEngine();
+        var auction = new Auction();
+        auction.AddCall(Seat.North, new Bid(3, Denomination.NoTrump));
+        auction.AddCall(Seat.East, new Bid(4, Denomination.Diamonds));
+        auction.AddCall(Seat.South, AuctionAction.Pass);
+        auction.AddCall(Seat.West, AuctionAction.Pass);
+        var opener = Cards("CA CK CQ C9 C8 C7 C6 D8 D6 D4 H2 S2 S3");
+
+        Assert.Equal(new Bid(4, Denomination.Hearts), engine.DecideBid(Seat.North, opener, auction));
+    }
+
+    [Fact]
+    public void StrictProfile_Gambling4DRelayWithoutShortnessAnswersFourNoTrump()
+    {
+        var engine = StrictSefEngine();
+        var auction = new Auction();
+        auction.AddCall(Seat.North, new Bid(3, Denomination.NoTrump));
+        auction.AddCall(Seat.East, new Bid(4, Denomination.Diamonds));
+        auction.AddCall(Seat.South, AuctionAction.Pass);
+        auction.AddCall(Seat.West, AuctionAction.Pass);
+        var opener = Cards("CA CK CQ C9 D8 D6 D4 D2 H8 H6 H4 S2 S3");
+
+        Assert.Equal(new Bid(4, Denomination.NoTrump), engine.DecideBid(Seat.North, opener, auction));
+    }
+
+    [Fact]
+    public void StrictProfile_Gambling4ClubsPassOrCorrectCorrectsToDiamonds()
+    {
+        var engine = StrictSefEngine();
+        var auction = new Auction();
+        auction.AddCall(Seat.North, new Bid(3, Denomination.NoTrump));
+        auction.AddCall(Seat.East, new Bid(4, Denomination.Clubs));
+        auction.AddCall(Seat.South, AuctionAction.Pass);
+        auction.AddCall(Seat.West, AuctionAction.Pass);
+        var opener = Cards("DA DK DQ D9 D8 D7 D6 C5 C4 H8 H3 S9 S2");
+
+        Assert.Equal(new Bid(4, Denomination.Diamonds), engine.DecideBid(Seat.North, opener, auction));
+    }
+
     [Theory]
     [InlineData(Denomination.Hearts)]
     [InlineData(Denomination.Spades)]
@@ -395,7 +464,12 @@ public sealed class SefPreemptTests
 
     // --- Aides ---
 
-    private static List<Card> Cards(params string[] cards) => cards.Select(Parse).ToList();
+    private static SefBiddingEngine StrictSefEngine() => new(profile: BiddingProfile.Load(
+        Path.Combine(AppContext.BaseDirectory, "sef-bidding-profile.json")));
+
+    private static List<Card> Cards(params string[] cards) => cards
+        .SelectMany(card => card.Split(' ', StringSplitOptions.RemoveEmptyEntries))
+        .Select(Parse).ToList();
 
     private static Auction AuctionWithBids(params (Seat Seat, Bid Bid)[] bids)
     {

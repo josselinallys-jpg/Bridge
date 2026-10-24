@@ -184,7 +184,10 @@ public static class SeatExtensions
 /// <summary>
 /// Appel d'enchère (siège + enchère ou passe).
 /// </summary>
-public readonly record struct AuctionCall(Seat Seat, AuctionAction Action, Bid? Bid = null)
+public enum AuctionForcing { None, OneRound, SelfForcing, GameForcing }
+
+public readonly record struct AuctionCall(Seat Seat, AuctionAction Action, Bid? Bid = null,
+    AuctionForcing Forcing = AuctionForcing.None)
 {
     public bool IsPass => Action == AuctionAction.Pass;
     public override string ToString() => Action switch

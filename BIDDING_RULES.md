@@ -2,6 +2,218 @@
 
 Le moteur `SefBiddingEngine` applique le socle du Système d'Enseignement Français décrit dans la référence Majeure cinquième.
 
+## Profil configurable
+
+Le fichier `sef-bidding-profile.json`, à la racine du dépôt, est copié dans les sorties
+console et WPF. Les applications le chargent par défaut au démarrage. Pour utiliser un autre
+fichier sans recompilation, définir son chemin avant de lancer l'application :
+
+```powershell
+$env:BRIDGE_BIDDING_PROFILE = 'C:\Bridge\profils\mon-systeme.json'
+dotnet run --project src/Bridge.Console
+```
+
+Sans variable, le catalogue SEF situé à côté de l'exécutable est utilisé. En son
+absence, `bidding-profile.json` sélectionne le mode historique ; sans aucun fichier,
+le moteur utilise les paramètres historiques standard. Un fichier invalide est refusé.
+Un fichier sélectionné explicitement doit exister. Le profil est immuable durant
+la session et commun aux quatre sièges ; redémarrer pour changer de système.
+Les partenaires humains doivent appliquer les mêmes accords que les IA.
+
+### Catalogue SEF déclaratif
+
+Le catalogue contient des règles couvrant les familles des huit chapitres de
+`SEF.txt`. Les seuils, longueurs, distributions, réponses et conventions sont des
+données éditables, pas des constantes à recompiler. `useStandardFallback: false`
+interdit le recours aux décisions historiques : une situation non couverte aboutit
+à passe avec la trace « Aucune regle configuree applicable ».
+
+| Section de SEF.txt | Configuration |
+|---|---|
+| 1. Classification et évaluation | `evaluation` : H, L, D et revalorisation des atouts ; faits de régularité, unicolore et bicolore |
+| 2. Ouvertures mineures | `opening.minor.*`, `response.minor.*`, `minor.*`, suites naturelles et conventions |
+| 3. Ouvertures majeures | `opening.major*`, `response.major.*`, `major.*`, Drury, Truscott, soutiens et splinters |
+| 4. Ouverture de 1SA | `one-nt.*`, Stayman, Texas, chassé-croisé, misères dorées, convention 2012 et Rubensohl |
+| 5. Barrages | `opening.weak-two`, `opening.preempt-*`, `weak-two.*`, `preempt.*`, `gambling.*`, Blackwood |
+| 6. Ouvertures fortes | `strong-clubs.*`, `game-force.*`, `strong-nt.*`, `two-nt.*`, défenses après intervention |
+| 7. Redemandes de l'ouvreur | `opener.*` : soutiens, SA, bicolores, répétitions, enchères libres/forcées et Sputnik |
+| 8. Deuxième enchère du répondant | `responder.*` : essais après fit, relais, forcing, arrêts et développements naturels |
+
+L'évaluation HLD ajoute les points D seulement quand un fit d'au moins huit atouts
+est établi ou décrit par la séquence. Sans fit, les points comptés sont H+L.
+
+Chaque règle possède un `id` unique et une `sefSection` indiquant sa provenance.
+La priorité la plus élevée est examinée en premier ; à priorité égale, l'ordre du
+fichier est conservé. La première règle applicable produisant un appel légal gagne.
+Une réponse illégale est ignorée ; le moteur examine alors la règle suivante.
+Les domaines de points de règles concurrentes peuvent se chevaucher volontairement :
+la priorité les départage, contrairement aux plages nommées du profil historique.
+
+Exemple : modifier le seuil et la réponse d'un soutien majeur sans toucher au C# :
+
+```json
+{
+	"id": "response.major.raise-simple",
+	"sefSection": "3.soutiens",
+	"stage": "Response",
+	"priority": 830,
+	"sideSequence": ["1M"],
+	"opponentsHaveActed": false,
+	"conditions": [
+		{ "fact": "length.opening", "minimum": 3 },
+		{ "fact": "fitPoints", "minimum": 6, "maximum": 10 }
+	],
+	"response": { "level": 2, "denomination": "Opening" }
+}
+```
+
+Modifier l'entrée existante, sans dupliquer son `id`. `enabled: false` désactive une
+règle. `customConventions` active ou désactive une convention pour toutes les règles
+qui la désignent par `convention` ou `requiresConventions`. `disabledConventions`
+permet de définir explicitement les réponses naturelles de remplacement. Une nouvelle
+convention s'ajoute en déclarant son nom dans `customConventions` et ses séquences
+dans `rules`, sans code exécutable dans le JSON.
+
+Principales conventions : `stayman`, `majorTransfers`, `minorTransfers`,
+`fittedTwoNoTrump`, `fittedThreeNoTrump`, `drury`, `truscott`, `splinter`,
+`meetingBids`, `sputnik`, `cuebid`, `cappelletti`, `landy`, `rubensohl`,
+`chasseCroise`, `goldenMisery`, `staymanTransfers`, `convention2012`,
+`majorTwoSuiters`, `minorTwoSuiters`, `weakTwoRelay`, `gamblingRelays`,
+`aceResponses`, `blackwood`, `roudi`, `thirdSuitForcing`, `fourthSuitForcing`.
+Les ouvertures `weakTwo`, `preempts`, `gambling`, `strongTwoClubs` et
+`gameForcingTwoDiamonds` disposent aussi d'interrupteurs.
+
+### Conditions et réponses
+
+- Phases : `Opening`, `Response`, `OpenerRebid`, `ResponderRebid`, `Continuation`, `Intervention` ou `Any`.
+- `sideSequence` décrit les appels non passés du camp ; `opponentSequence` ceux de l'adversaire. `M` désigne une majeure, `m` une mineure, `x` une couleur, `NT` les sans-atout et `*` un appel quelconque. `X`/`XX` désignent contre/surcontre.
+- `auctionSequence` décrit la chronologie complète ; `ignorePasses: false` permet d'y inclure les `P`. Les séquences sont exactes, sauf `allowAdditionalSideBids` qui autorise une suite au préfixe du camp.
+- `lastSideCall`, `lastOpponentCall` et `lastOpponentAction` précisent les dernières actions non passées. Les passes préalables se testent avec `passedHand`, `passedOpening` et `seatPosition`.
+- Les `conditions` sont cumulatives. `anyOf` ajoute des alternatives, chacune composée de conditions cumulatives.
+- Faits numériques : `h`, `hl`, `hld`, `fitPoints`, `aces`, `keys`, `trumpQueen`, `losers`, `playingTricks`, `defensiveTricks`, `ownKings`, `ownQueens`, `singletons`, `voids`, `doubletons`, compteurs d'appels et paliers.
+- Faits logiques (0/1) : `regular`, `balanced`, `singleSuited`, `twoSuited`, `majorFit`, `agreedTrump`, `gameReached`, `vulnerable`, `opponentsVulnerable`, `favorableVulnerability`. `regular` correspond aux distributions régulières de SEF.txt ; `balanced` conserve le test historique plus large.
+- Faits par couleur : `length.*`, `honors.*`, `bigHonors.*`, `sideBigHonors.*`, `sideQueens.*`, `topHonors.*`, `stopper.*`, `ace.*`, `king.*`, `queen.*`. Les sélecteurs comprennent les quatre couleurs, `opening`, `partner`, `opponent`, `firstResponse`, `openerRebid`, `candidate`, `longest`, `longestMajor`, `longestMinor`, `otherMajor`, `otherMinor`, `fourthSuit`, `shortest` et `trump`. `shape.5332` teste une distribution indépendamment des couleurs.
+- `minimum`/`maximum` définissent les bornes inclusives ; `minimumFact`/`maximumFact` comparent deux faits, par exemple les longueurs de deux couleurs. Un fait indisponible empêche la règle de s'appliquer.
+- `candidateSuits` et `suitOrder` permettent de choisir une couleur par longueur et ordre économique : `LongestThenHighest`, `LongestThenLowest`, `Lowest`, `Highest`.
+- Une réponse peut être `Bid`, `Pass`, `Double` ou `Redouble`. Son palier peut être fixe, économique (`Cheapest`), à saut (`Jump`), à la manche (`Game`) ou au chelem (`SmallSlam`, `GrandSlam`). `minimumLevel`/`maximumLevel` bornent le résultat.
+- Chaque `response` doit déclarer explicitement `forcing`: `NonForcing`, `OneRound`, `SelfForcing` ou `GameForcing`. L'omission ou une valeur inconnue invalide le profil ; aucune règle n'hérite silencieusement d'un statut.
+- `OneRound` oblige le partenaire à produire une enchère à la prochaine occasion ; `SelfForcing` oblige l'auteur à reparler à son prochain tour ; `GameForcing` interdit à chaque partenaire de passer jusqu'à ce que leur camp atteigne la manche. Quand aucune règle de continuation n'est applicable, l'IA choisit une enchère légale de secours respectant cette obligation. Si aucune enchère qui satisfait l'obligation n'est légale, Passe redevient possible.
+- Passe, Contre et Surcontre sont refusés par le modèle d'enchères tant qu'une obligation active exige une enchère à la couleur ou à SA. Les applications annotent les appels humains avant de les enregistrer et leur signalent ce refus.
+
+Le profil est copié et figé à la construction du moteur. La vulnérabilité est
+transmise pour chaque donne par les applications. Les infobulles et la trace
+identifient la règle sélectionnée et les conditions configurées. Modifier une zone
+ne recalcule pas les autres : les réponses et continuations doivent rester cohérentes.
+Les simulations de légalité ne remplacent pas la validation bridge de chaque accord.
+
+### Passages à arbitrer
+
+`SEF.txt` contient notamment « 11-2HL », « convention 2022 » dans la section 2SA
+et une phrase tronquée sur le décalage des réponses après 2♣-2♦-2SA. Le catalogue
+utilise 11-12 HL, le nom `convention2012` du moteur existant et des seuils explicites
+éditables pour les redemandes fortes. Les retours à 3SA proposés après des demandes
+au palier de 4 sont illégaux et ne sont jamais joués par le moteur. Ces passages
+ne permettent pas de revendiquer une conformité littérale exhaustive sans arbitrage
+bridge ; ils doivent être précisés avant de figer un profil de référence définitif.
+
+### Stayman Après Redemande Forte à SA
+
+Après `2♣-2♦-2SA-3♣-3♦`, l'ouvreur a décrit 22-23 HL et nié une majeure quatrième.
+Le répondant conclut à `3SA` avec les valeurs de manche : avec 5 H, Nord ne doit
+pas passer sur `3♦`, qui est une réponse artificielle au Stayman, pas un contrat
+naturel à jouer. La règle `strong-nt.stayman.conclude-no-major` reprend le minimum
+de 2 HL de la conclusion directe après cette redemande forte, sans intervention.
+Ce seuil reste configurable et ne modifie ni l'ouverture directe de `2SA`, ni
+les développements après une réponse majeure au Stayman.
+
+### Texas Mineur : Courte et Contrôles
+
+Après `1SA-3♣-3♦-3♥`, l'atout potentiel est carreau et `3♥` décrit une courte,
+pas une nouvelle couleur naturelle. Avec un fit, `4♣` montre un contrôle trèfle
+et agrée les carreaux : ce n'est ni un autre Texas, ni un changement d'atout.
+Le répondant peut annoncer un contrôle non encore montré (par exemple `4♠` avec
+une main positive), sinon conclure à `5♦`. La majeure courte ne doit pas être
+répétée comme un contrôle nouveau. Le Blackwood et sa conclusion gardent l'atout
+carreau, notamment pour compter le Roi d'atout.
+
+Après un Texas trèfle (`1SA-2♠-3♣`), `4♣` est au contraire un soutien de l'atout
+trèfle. Sans fit confirmé, l'ouvreur peut revenir à `3SA` avec un arrêt dans la
+majeure courte. Les continuations sont les règles `one-nt.minor-short.*` ; les seuils
+de recherche de contrôle/chelem restent configurables. Désactiver `minorTransfers`
+désactive également cette reconnaissance et les suites associées.
+
+Les infobulles décrivent l'action survolée, même si l'IA aurait choisi une autre
+action. Elles affichent les conditions et le caractère forcing en français, sans
+utiliser l'identifiant technique comme libellé. Passe, Contre et Surcontre disposent
+des mêmes explications contextuelles ; Passe est signalé comme exclu dans la suite
+forcing de manche avant qu'une manche ne soit atteinte. Cette explication du sens
+d'une enchère n'affirme pas que la main du joueur en remplit les conditions.
+
+### Chapitre 7 : Arbitrages Validés
+
+Les arbitrages du 18 octobre 2026 sont consignés à la fin du chapitre 7 de
+`SEF.txt`. Les règles `opener.*` du catalogue déclaratif les appliquent ; le mode
+historique sans profil conserve ses anciens accords. Les entrées historiques
+incompatibles de répétition, soutien direct fort et invitation à 3M ont été désactivées
+dans le catalogue pour ne pas contourner les nouvelles bornes.
+
+- Après soutien simple, 3M est un barrage, pas une invitation ; essai naturel ou 2SA à 17-19 HLD, manche à 20+ HLD.
+- Bicolore économique : non forcing après réponse au palier 1, forcing après 2 sur 1. Bicolore à saut : forcing de manche. Bicolore cher : forcing un tour après une couleur au palier 1, forcing de manche après 1SA ou 2 sur 1.
+- Soutiens spécifiques en H prioritaires sur les équivalences indicatives HLD ; super-forcing généralisé et faux bicolore puis soutien dans la zone forte non couverte.
+- Splinters sur 1♣-1♦ à 18 H et plus, sans plafond ; soutien différé corrigé en 1♠-2♥-2♠-2SA-3♥.
+- Main semi-régulière : 5422 ou 6322, soit deux doubletons, pas deux singletons. Mini-maxi 1♦-2♣-2SA forcing un tour ; 2SA à saut 18-19 HL.
+- Répétition simple après 2 sur 1 forcing un tour ; saut prioritaire à 17 HL avec six cartes. Bicolore 5-5 à saut : 75 % des H dans les deux couleurs.
+- En compétition, les faits `forcedRebid`/`freeRebid` tiennent compte de l'ordre des appels non passés. Le Sputnik est traité comme une réponse de l'autre majeure seulement lorsque cette majeure est identifiée par l'intervention adverse ; les seuils sont ajustés de 2 ou 4 points selon le palier.
+
+Les nouveaux faits comprennent `responseFitPoints` (fit dans la couleur du répondant),
+`agreedFitPoints` (fit dans la couleur d'ouverture), `adjustedH`, `adjustedHL`,
+`adjustedResponseFitPoints`, `semiRegular`, `oneLevelMajorAvailable`, `candidateReverse`,
+`candidateEconomic`, `concentratedHonorsPercent`, `repeatNeedsSix`, `trialSpace`,
+`shortSuitStoppers`, `force.*` et `control.*`. Ces valeurs utilisent l'évaluation du profil.
+Les modes `DoubleJump`, `Support` et `SupportJump` expriment les doubles sauts et les
+soutiens après contre sans confondre annonce de la majeure et soutien.
+
+Les conventions `openerTrialBids`, `openerTrialDouble`, `openerSuperForcing` et
+`openerFitJump` peuvent être désactivées dans `customConventions`. Les seuils restent
+éditables dans les règles, y compris ceux des essais et des redemandes compétitives.
+
+### Mode historique
+
+Le fichier `bidding-profile.json` et la construction de `new SefBiddingEngine()`
+sans profil injecté conservent le comportement antérieur. Ce mode configure :
+
+- `oneNoTrump` : zone d'ouverture de 1SA en **H** et autorisation des majeures cinquièmes.
+- `twoNoTrump` : zone d'ouverture de 2SA en **HL**, conformément au calcul historique du moteur, et autorisation des majeures cinquièmes.
+- `conventions.stayman` : activation sur les ouvertures directes de 1SA et 2SA, avec seuils distincts `staymanMinimumHL` et `twoNoTrumpStaymanMinimumHL`.
+- `conventions.majorTransfers` / `minorTransfers` : activation des Texas sur ces ouvertures, avec leurs rectifications et continuations.
+- `responses` : seuils HL des réponses quantitatives à 1SA. Dans l'ordre croissant : invitation à `2SA`, manche à `3SA`, invitation au petit chelem à `4SA`, petit chelem à `6SA`, invitation au grand chelem à `5SA`, grand chelem à `7SA`. `maximumHL` borne la dernière zone et conserve par défaut la limite historique de 25 HL.
+
+Le profil fourni reproduit le comportement antérieur. Un JSON partiel complète
+les propriétés manquantes par les valeurs standard ; il n'y a pas d'héritage entre
+fichiers. `schemaVersion` vaut 1. Les propriétés inconnues, sections nulles,
+zones inversées ou chevauchantes sont refusées. La zone de 1SA commence au moins
+à 10 H ; celle de 2SA commence au moins à 18 HL et reste sous les 22 HL de 2♣.
+Ces bornes évitent de reconfigurer implicitement les ouvertures fortes.
+
+Changer la zone d'ouverture ne recalcule pas automatiquement les zones de réponse :
+adapter également `responses` et les seuils Stayman selon les accords du camp.
+L'ouvreur accepte les invitations à SA avec le maximum de sa zone configurée.
+Les infobulles des ouvertures et des demandes Stayman utilisent les seuils actifs ;
+le CSV reste un catalogue de textes, pas un moteur de règles.
+
+Lorsque les Texas sont désactivés, les réponses de remplacement sont naturelles :
+sur 1SA, une majeure cinquième faible se nomme à `2M` (à `3♠` si `2♠` reste réservé
+au Texas mineur), et une mineure sixième faible à `3m`. Sur 2SA, une majeure
+cinquième se nomme à `4M` ; une mineure sixième de 16+ HL à `5m`.
+L'ouvreur ne rectifie plus les anciennes enchères conventionnelles et passe sur
+ces conclusions naturelles. Sans Stayman, les mains sans autre convention adaptée
+utilisent les réponses à SA disponibles.
+
+Dans ce mode historique uniquement, les réponses et continuations des ouvertures fortes `2♣`/`2♦`, les interventions,
+Rubensohl, Roudi et Blackwood gardent leurs règles actuelles. La configuration
+reste limitée aux paramètres nommés ci-dessus. Pour configurer les autres familles,
+utiliser le catalogue déclaratif avec `useStandardFallback: false`.
+
 ## Évaluation
 
 - Points H : As 4, Roi 3, Dame 2, Valet 1.
@@ -9,19 +221,19 @@ Le moteur `SefBiddingEngine` applique le socle du Système d'Enseignement Franç
 - Points D : chicane 3, singleton 2, doubleton 1.
 - Revalorisation après fit : +2 points pour le 9e atout du camp, +1 par atout supplémentaire.
 - Les décisions sans fit utilisent H ou HL; les soutiens utilisent HLD revalorisés.
-- Une ouverture à SA exclut une majeure cinquième.
+- Par défaut, 2SA exclut une majeure cinquième. À 1SA, le moteur autorise certaines distributions régulières avec majeure cinquième, comme le décrivent les exceptions ci-dessous.
 
 ## Ouvertures
 
 | Ouverture | Signification |
 |---|---|
 | `1♣` / `1♦` | Meilleure mineure, 12 H ou 11 H et 13 HL |
-| `1♥` / `1♠` | Majeure au moins cinquième, 13-21 HL, prioritaire sur SA et mineures |
+| `1♥` / `1♠` | Majeure au moins cinquième, 13-21 HL, hors exceptions d'ouverture à SA |
 | `1SA` | Main régulière, 15-17 H |
 | `2♣` | Fort indéterminé, forcing un tour : 22-23 H réguliers, ou très belle couleur au moins cinquième de 20-23 HL |
 | `2♦` | Forcing de manche : 24+ H(L), ou unicolore à neuf levas majeures / dix mineures |
 | `2♥` / `2♠` | Deux faible : six cartes exactement, belle couleur, 5-10 H, au plus un gros honneur annexe |
-| `2SA` | Main régulière, 20-21 H |
+| `2SA` | Main régulière, 20-21 HL |
 | `3SA` | Gambling : mineure maîtresse de sept cartes (ARD), rien d'autre qu'au plus une dame annexe |
 | Palier de 3/4 | Barrage : sept cartes et 4-10 H au palier 3, huit cartes et 5-10 H au palier 4 |
 
@@ -46,7 +258,16 @@ Après intervention adverse sur un barrage, le contre est punitif. Sur un 2 faib
 
 Sur `3SA` gambling, `4♣`/`5♣` demandent à l'ouvreur de passer avec les trèfles ou
 de corriger à carreau. `4♦` demande de nommer une courte; l'ouvreur répond `4SA`
-sans singleton ni chicane.
+sans singleton ni chicane, `5♣` avec une courte mineure, ou `4♥`/`4♠` avec une
+courte majeure. L'enchère de demande `4♦` n'a pas de seuil d'honneur supplémentaire.
+
+Après `2♣ - 2♦`, redemander `2♥`/`2♠` avec une majeure cinquième et 21-23 HL,
+ou une majeure sixième avec 8-8,5 levées de jeu et deux levées défensives. Une
+majeure septième se redemande au palier de 3 avec 8-8,5 levées et deux levées
+défensives ; une mineure septième demande 8,5-9,5 levées. `2SA` décrit 22-23 HL
+semi-réguliers lorsqu'aucune description de majeure ne s'applique. Pour les
+seuils fractionnaires, le profil utilise les perdantes, avec un bonus de 0,5 si
+la main contient au moins trois As, trois 10, ou deux 10 et trois 9.
 
 ## Redemandes de l'ouvreur
 
@@ -86,6 +307,33 @@ L'ouvreur d'un barrage (2 faible inclus, hors relais `2SA`) ne reparle jamais ap
 - Après une redemande différente de l'ouvreur, la répétition de la couleur du répondant montre une sixième et se fait au palier le plus économique.
 - Après `1M - 2x - 2M`, le soutien différé de la majeure d'ouverture au palier de 3 montre au moins trois cartes et une ambition de chelem.
 - Le splinter après une ouverture majeure montre un fit quatrième, 13+ HLD et un singleton dans la couleur annoncée par saut.
+
+### Soutiens majeurs et mineurs
+
+- Après `1m - 1M - 2M`, le répondant conclut à `4M` avec 13-14 HLD. Avec 9-12 HLD, il essaie la manche : `3m` si l'ouverture mineure a au moins trois cartes, sinon une couleur latérale faible à compléter au palier de 3, sinon `2SA` comme essai généralisé. À partir de 15 HLD, `2SA` est un essai de chelem.
+- Après `1m - 1M - 3M`, une nouvelle couleur montre un contrôle, en commençant par le moins cher ; le contrôle peut être montré avec n'importe quelle force. Après `1m - 1x - 3m`, une couleur sous `3SA` montre un arrêt, dans l'ordre économique ; `3SA` est proposé si tous les arrêts nécessaires sont présents.
+
+### Redemande à 1SA
+
+- Une nouvelle couleur économique au palier de 2 est naturelle et non forcing ; la répétition de la couleur de réponse n'exige que cinq cartes.
+- `2♦` montre `5♦` et cinq cartes dans la majeure répondue après `1♣ - 1M - 1SA`, ou `4♦` et quatre cartes dans cette majeure après `1♦ - 1M - 1SA`. Après `1♥ - 1♠ - 1SA`, `2♥` montre cinq piques et quatre cœurs.
+- Avec cinq cartes dans la majeure répondue et au moins 11 HL, `2♣` est Roudi ; cette convention est prioritaire sur les développements naturels génériques.
+- Les SA sont quantitatifs, dénient cinq cartes dans la majeure répondue et demandent l'arrêt dans la dernière couleur : `2SA` avec 11-12 HL, `3SA` avec 13-18 HL. Une majeure cinquième sous 11 HL se décrit par ping-pong.
+- Après `1♣/1♦ - 1♠ - 2SA`, `3♥` montre un 5-5 majeur et une ambition de chelem ; `4♥` montre le même bicolore, limité à la manche, et laisse l'ouvreur passer ou corriger à `4♠`. Après `1m - 1M - 2SA`, l'autre mineure au palier de 3 est toujours le relais forcing de manche ; l'ouvreur renseigne d'abord sur les cœurs, puis les piques, puis `3SA`.
+
+### Redemandes à la couleur
+
+- Avec 3-4 cartes dans la seconde couleur de l'ouvreur et 5-6 HL, le répondant passe.
+- Soutien de la mineure d'ouverture : `2m` avec 6-10 H ; `3m` à partir de 12 H avec une main irrégulière, sans majeure de réponse cinquième.
+- Soutien de la majeure d'ouverture : `2M` avec 6-10 HLD, `3M` avec 11-12 HLD, `4M` avec 13-15 HLD. Les mêmes zones s'appliquent au soutien de la seconde majeure de l'ouvreur. Un splinter montre quatre atouts, 16-19 HLD et une courte.
+- Répéter sa couleur : `2M` avec six cartes et 6-10 HL ; `3M` avec six cartes et 11-12 HL. Une nouvelle couleur sans saut est forcing un tour à partir de 10 HL ; la quatrième couleur est forcing un tour à partir de 11 H.
+- Les SA demandent l'arrêt dans la dernière couleur : `1SA` avec 6-10 HL, `2SA` avec 11-12 HL, `3SA` avec 12 H ou 13-15 HL.
+
+### Forcing et séquences spéciales
+
+- Après une réponse 2 sur 1, toutes les enchères sont forcing de manche, sauf la répétition à 3 de la couleur répondue avec 11-12 HL, qui est non forcing. La quatrième couleur reste forcing de manche.
+- Après un bicolore cher, `2SA` modérateur avec 8 HL ou moins est forcing un tour. `3SA` avec 10-11 H et l'arrêt dans la dernière couleur, les répétitions et les soutiens suivent les règles naturelles du chapitre 8.
+- Après un bicolore à saut, `2SA` est naturel sans force minimale ; `3SA` avec 10-11 HL exige les arrêts. La répétition promet cinq cartes ; la quatrième couleur reste forcing un tour par défaut.
 
 Le `2SA fitté` est une convention distincte : après `1♥` ou `1♠`, il montre exactement trois atouts et 11-12 points de soutien. L'ouvreur choisit `3M` avec une main minimale ou `4M` avec une main plus forte.
 
@@ -166,6 +414,12 @@ Le moteur conclut ensuite à la manche, propose la manche ou joue à SA selon le
 ## Réponses à l'ouverture de 1SA
 
 L'ouverture de `1SA` exige 15-17 H, ni chicane ni singleton, pas deux doubletons, pas de majeure cinquième.
+
+Exceptions historiques conservées dans le profil standard : le moteur accepte
+une majeure cinquième avec un seul doubleton ; certaines distributions mineures
+5422 ou 6322 sont aussi admises. Ces formes non standard ne s'ouvrent pas à 1SA
+avec le maximum de la zone (17 H par défaut). L'option `allowFiveCardMajor: false`
+interdit les exceptions à majeure cinquième sans supprimer les exceptions mineures.
 
 Réponses du répondant :
 

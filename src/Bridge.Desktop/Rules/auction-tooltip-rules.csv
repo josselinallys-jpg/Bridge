@@ -1,12 +1,13 @@
 Key;Text
 unknown;Enchère non prévue
 pass;Passe : aucun seuil ou aucune enchère forcing adaptée.
+pass-forcing;Passe exclu par l'accord : la séquence est forcing de manche.
 double;Contre : demande de choix au partenaire avec soutien des couleurs non nommées.
 redouble;Surcontre : volonté de jouer la séquence contrée.
 opening-major;Ouverture {couleur} : {cartes} cartes, 12H ou 13HL minimum ({H}H, {HL}HL).
 opening-minor;Ouverture de mineure : meilleure mineure, 12H ou 11H avec 13HL ({H}H, {HL}HL).
-opening-1nt;Ouverture 1SA : jeu régulier, 15-17H ({H}H, {HL}HL).
-opening-2nt;Ouverture 2SA : jeu régulier sans majeure cinquième, 20-21HL ({H}H, {HL}HL).
+opening-1nt;Ouverture 1SA : distribution SA, {minimum1SA}-{maximum1SA}H, majeure cinquième {majeureCinquieme1SA} ({H}H, {HL}HL).
+opening-2nt;Ouverture 2SA : distribution SA, {minimum2SA}-{maximum2SA}HL, majeure cinquième {majeureCinquieme2SA} ({H}H, {HL}HL).
 strong-two-clubs-opening;Ouverture de 2♣ fort indéterminé, auto-forcing; le répondant relaie obligatoirement à 2♦ ({H}H, {HL}HL).
 strong-two-diamonds-opening;Ouverture de 2♦ forcing de manche : 24HL ou une levée de la manche avec deux levées défensives ({H}H, {HL}HL).
 strong-gambling-three-no-trump;Ouverture 3SA gambling : mineure maîtresse de sept cartes avec ARD et au plus une Dame annexe ({couleur}, {cartes} cartes).
@@ -17,7 +18,7 @@ intervention-minor;Intervention à la couleur : {couleur}, au moins cinq cartes 
 intervention-nt;Intervention à Sans-Atout au palier {palier} : jeu régulier et arrêt dans la couleur adverse; à 1SA, 16-18H ({H}H, {HL}HL).
 intervention-two-level;Intervention au palier 2 à {couleur} : six cartes robustes, ou cinq cartes solides avec une valeur d'ouverture ({cartes} cartes, {H}H, {HL}HL).
 intervention-jump;Intervention à saut à {couleur} : au moins six cartes, barrage faible jusqu'à 10H ({cartes} cartes, {H}H, {HL}HL).
-one-nt-stayman;Stayman : au moins 8HL et une majeure quatrième; demande la majeure de l'ouvreur ({H}H, {HL}HL).
+one-nt-stayman;Stayman : au moins {minimumStayman}HL et une majeure quatrième; demande la majeure de l'ouvreur ({H}H, {HL}HL).
 one-nt-texas-hearts;Texas cœurs : transfert obligatoire, au moins cinq cœurs ({cartes} cartes, {H}H, {HL}HL).
 one-nt-texas-spades;Texas piques : transfert obligatoire, au moins cinq piques ({cartes} cartes, {H}H, {HL}HL).
 one-nt-texas-minor;Texas mineur vers {couleur} : au moins cinq cartes, généralement six ou une courte ({cartes} cartes, {H}H, {HL}HL).
@@ -67,7 +68,7 @@ strong-two-diamonds-minor-ace;Réponse à 2♦ forcing : As de la mineure annonc
 strong-two-diamonds-ace-group;Réponse à 2♦ forcing : groupe des deux As décrit par l'enchère ({couleur}).
 strong-two-diamonds-rebid;Redemande naturelle de l'ouvreur après 2♦ forcing ({H}H, {HL}HL).
 strong-two-diamonds-development;Développement forcing après 2♦ : la séquence reste forcing jusqu'à la manche ({H}H, {HL}HL).
-strong-two-nt-stayman;Stayman sur l'ouverture forte de 2SA : majeure quatrième, dès 4HL.
+strong-two-nt-stayman;Stayman sur l'ouverture forte de 2SA : majeure quatrième, dès {minimumStayman2SA}HL.
 strong-two-nt-major-texas;Texas majeur sur 2SA : au moins cinq cartes dans la majeure transférée ({cartes} cartes).
 strong-two-nt-club-texas;Texas trèfle sur 2SA : six cartes ou plus avec espoir de chelem.
 strong-two-nt-diamond-texas;Texas carreau sur 2SA : six cartes ou plus avec espoir de chelem.

@@ -59,6 +59,28 @@ SefBiddingEngine : ICompetitiveBiddingStrategy
 
 **Dépendances** : Bridge.Core
 
+**Configuration des enchères** : `BiddingProfile` regroupe l'évaluation des mains,
+le catalogue de conventions et des `BiddingRule` déclaratives pour toutes les phases.
+Les paramètres nommés à SA restent disponibles dans le mode historique.
+`SefBiddingEngine(logger, profile)` valide et copie le profil à la construction ;
+sans profil injecté, les valeurs historiques sont conservées. La façade
+`FifthMajorBiddingEngine` accepte le même paramètre optionnel.
+
+`BiddingProfile.LoadForApplication()` charge le fichier indiqué par
+`BRIDGE_BIDDING_PROFILE`, ou `sef-bidding-profile.json` à côté de l'exécutable,
+avec repli sur `bidding-profile.json` si le catalogue déclaratif est absent.
+La console et WPF partagent ce point d'entrée. Le JSON est versionné, strict et
+ne contient pas de code exécutable. Le profil chargé reste fixe pour la session.
+Les règles sont évaluées par priorité décroissante puis ordre du fichier. Leurs
+conditions portent sur l'historique, la main et la vulnérabilité ; seules les
+réponses légales sont retenues. `useStandardFallback: false` interdit les décisions
+historiques implicites. Les conventions désactivées ne peuvent alors réapparaître
+par le moteur historique. Les réponses de remplacement et les obligations forcing
+sont elles-mêmes des règles explicites. L'évaluation est pure, sans scripts ni LLM.
+`ExplainCall` expose la règle retenue et ses conditions pour alimenter les
+infobulles. Les formats et les ambiguïtés de la source SEF sont décrits
+dans `BIDDING_RULES.md`.
+
 ---
 
 ### Bridge.AI.CardPlay

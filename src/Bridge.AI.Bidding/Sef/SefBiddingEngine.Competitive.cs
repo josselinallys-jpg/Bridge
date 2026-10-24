@@ -5,7 +5,7 @@ using Bridge.Core.Models;
 /// <summary>Chapitre SEF : interventions et réveils.</summary>
 public sealed partial class SefBiddingEngine
 {
-    private static AuctionCall RebidAfterMinorOpeningIntervention(
+    private AuctionCall RebidAfterMinorOpeningIntervention(
         Seat seat, HandEvaluation hand, Bid opening, Bid response, Auction auction)
     {
         var intervention = auction.Calls.Last(call =>
@@ -35,7 +35,7 @@ public sealed partial class SefBiddingEngine
         return BidCall(seat, OpenerRebid(hand, opening, response));
     }
 
-    private static AuctionCall RespondToMinorOpeningIntervention(
+    private AuctionCall RespondToMinorOpeningIntervention(
         Seat seat, HandEvaluation hand, Bid opening, Auction auction)
     {
         var intervention = auction.Calls
@@ -118,7 +118,7 @@ public sealed partial class SefBiddingEngine
         return new(seat, AuctionAction.Pass);
     }
 
-    private static AuctionCall RespondToMajorOpeningIntervention(
+    private AuctionCall RespondToMajorOpeningIntervention(
         Seat seat, HandEvaluation hand, Bid opening, Auction auction)
     {
         var opponentCall = auction.Calls.LastOrDefault(call =>
@@ -487,7 +487,7 @@ public sealed partial class SefBiddingEngine
             : null;
     }
 
-    private static AuctionCall RespondToOneNoTrumpIntervention(Seat seat, HandEvaluation hand, Auction auction)
+    private AuctionCall RespondToOneNoTrumpIntervention(Seat seat, HandEvaluation hand, Auction auction)
     {
         var interventionCall = auction.Calls.Last(call => !SameSide(call.Seat, seat) &&
             call.Action is AuctionAction.Bid or AuctionAction.Double);
@@ -595,23 +595,24 @@ public sealed partial class SefBiddingEngine
         return null;
     }
 
-    private static AuctionCall RespondToOneNoTrumpConventionDouble(
+    private AuctionCall RespondToOneNoTrumpConventionDouble(
         Seat seat, HandEvaluation hand, Bid response, Auction auction)
     {
-        if (response == new Bid(2, Denomination.Clubs))
+        if (Profile.Conventions.Stayman && response == new Bid(2, Denomination.Clubs))
         {
             var hearts = hand.SuitLength(Suit.Hearts) == 4;
             var spades = hand.SuitLength(Suit.Spades) == 4;
             if (hearts && spades) return BidCall(seat, new Bid(3, Denomination.Clubs));
             if (hearts) return BidCall(seat, new Bid(2, Denomination.Hearts));
             if (spades) return BidCall(seat, new Bid(2, Denomination.Spades));
-            if (hand.HighCardPoints is >= 16 and <= 17 && auction.IsLegal(new Bid(2, Denomination.NoTrump)))
+            if (hand.HighCardPoints >= Profile.OneNoTrump.Maximum - 1 && auction.IsLegal(new Bid(2, Denomination.NoTrump)))
                 return BidCall(seat, new Bid(2, Denomination.NoTrump));
             if (hand.SuitLength(Suit.Diamonds) >= 5 && auction.IsLegal(new Bid(2, Denomination.Diamonds)))
                 return BidCall(seat, new Bid(2, Denomination.Diamonds));
             return new(seat, AuctionAction.Pass);
         }
 
+        if (!Profile.Conventions.MajorTransfers) return new(seat, AuctionAction.Pass);
         var target = response == new Bid(2, Denomination.Diamonds)
             ? Suit.Hearts
             : response == new Bid(2, Denomination.Hearts) ? Suit.Spades : (Suit?)null;

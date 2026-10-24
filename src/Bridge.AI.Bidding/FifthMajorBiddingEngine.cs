@@ -11,7 +11,8 @@ public sealed class FifthMajorBiddingEngine : ICompetitiveBiddingStrategy
 {
     private readonly SefBiddingEngine _sef;
 
-    public FifthMajorBiddingEngine(ILogger? logger = null) => _sef = new SefBiddingEngine(logger);
+    public FifthMajorBiddingEngine(ILogger? logger = null, BiddingProfile? profile = null) =>
+        _sef = new SefBiddingEngine(logger, profile);
 
     public Bid? DecideBid(Seat seat, IReadOnlyList<Card> hand, Auction auction) =>
         _sef.DecideBid(seat, hand, auction);

@@ -16,7 +16,7 @@ logger.Information("╚═══════════════════
 
 // Configuration du jeu
 var random = new Random();
-var biddingAi = new SefBiddingEngine(logger);
+var biddingAi = new SefBiddingEngine(logger, BiddingProfile.LoadForApplication());
 var cardPlayAi = new ContractAwareCardPlayAi(logger);
 var engine = new BridgeGameEngine(biddingAi, cardPlayAi, logger);
 
@@ -47,6 +47,7 @@ void PlayDeal()
 {
     boardNumber++;
     var vulnerability = VulnerabilityExtensions.ForBoard(boardNumber);
+    biddingAi.Vulnerability = vulnerability;
     var deal = Deal.Create(random);
     var auction = new Auction();
     var dealer = Seat.North; // Nord commence toujours
@@ -66,6 +67,7 @@ void PlayDeal()
             logger.Information($"Enchères actuelles: {FormatAuction(auction)}");
             logger.Information($"{currentSeat} à vous d'enchérir:");
             call = ReadHumanCall(auction, currentSeat);
+            call = biddingAi.AnnotateCall(currentSeat, deal[currentSeat], auction.Calls, call);
         }
         else
         {
@@ -204,17 +206,32 @@ static AuctionCall ReadHumanCall(Auction auction, Seat seat)
 {
     while (true)
     {
+        var forcing = auction.ForcingFor(seat);
         Console.Write("Votre enchère (P, X, XX ou 1C-7SA): ");
         var text = Console.ReadLine()?.Trim().ToUpperInvariant();
         
         if (text is "P" or "PASS")
         {
-            return new AuctionCall(seat, AuctionAction.Pass);
+            if (forcing == AuctionForcing.None) return new AuctionCall(seat, AuctionAction.Pass);
+            Console.WriteLine("Cette séquence forcing interdit de passer.");
+            continue;
+        }
+
+        if (text == "X" && forcing != AuctionForcing.None)
+        {
+            Console.WriteLine("Cette séquence forcing exige une enchère à la couleur ou à Sans-Atout.");
+            continue;
         }
 
         if (text == "X" && auction.CanDouble(seat))
         {
             return new AuctionCall(seat, AuctionAction.Double);
+        }
+
+        if (text == "XX" && forcing != AuctionForcing.None)
+        {
+            Console.WriteLine("Cette séquence forcing exige une enchère à la couleur ou à Sans-Atout.");
+            continue;
         }
 
         if (text == "XX" && auction.CanRedouble(seat))

@@ -51,6 +51,30 @@ public sealed class Auction
         : _calls.Count >= 4 && _calls.TakeLast(3).All(call => call.IsPass);
     public bool IsPassedOut => IsComplete && HighestBid is null;
 
+    public AuctionForcing ForcingFor(Seat seat)
+    {
+        var side = _calls.Where(call => call.Seat.IsNorthSouth() == seat.IsNorthSouth()).ToArray();
+        var gameReached = side.Any(call => call.Bid is { } bid && IsGameBid(bid));
+        var active = AuctionForcing.None;
+        for (var index = 0; index < _calls.Count; index++)
+        {
+            var call = _calls[index];
+            if (call.Forcing == AuctionForcing.None || call.Seat.IsNorthSouth() != seat.IsNorthSouth()) continue;
+            if (call.Forcing == AuctionForcing.SelfForcing && call.Seat != seat ||
+                call.Forcing == AuctionForcing.OneRound && call.Seat.Partner() != seat) continue;
+            var fulfilled = call.Forcing switch
+            {
+                AuctionForcing.OneRound => _calls.Skip(index + 1).Any(next => next.Seat == call.Seat.Partner()),
+                AuctionForcing.SelfForcing => _calls.Skip(index + 1).Any(next => next.Seat == call.Seat),
+                AuctionForcing.GameForcing => gameReached,
+                _ => true
+            };
+            if (fulfilled) continue;
+            if ((int)call.Forcing > (int)active) active = call.Forcing;
+        }
+        return active;
+    }
+
     public bool IsLegal(Bid bid) => bid.Level is >= 1 and <= 7 &&
         (HighestBid is null || Compare(bid, HighestBid.Value) > 0);
 
@@ -98,6 +122,10 @@ public sealed class Auction
             throw new ArgumentException("Seule une enchère peut contenir un contrat.", nameof(call));
         }
 
+        var forcing = ForcingFor(call.Seat);
+        if (call.Action != AuctionAction.Bid && MustContinue(call.Seat))
+            throw new ArgumentException("Cette séquence forcing exige une enchère à la couleur ou à Sans-Atout.", nameof(call));
+
         if (call.Action == AuctionAction.Double && !CanDouble(call.Seat))
         {
             throw new ArgumentException("Ce contre n'est pas légal.", nameof(call));
@@ -110,6 +138,26 @@ public sealed class Auction
 
         _calls.Add(call);
     }
+
+    private bool MustContinue(Seat seat)
+    {
+        var forcing = ForcingFor(seat);
+        if (forcing == AuctionForcing.None) return false;
+        for (var level = 1; level <= 7; level++)
+        foreach (var denomination in Enum.GetValues<Denomination>())
+        {
+            var bid = new Bid(level, denomination);
+            if (IsLegal(bid) && (forcing != AuctionForcing.GameForcing || IsGameBid(bid))) return true;
+        }
+        return false;
+    }
+
+    private static bool IsGameBid(Bid bid) => bid.Denomination == Denomination.NoTrump
+        ? bid.Level >= 3
+        : bid.Level >= (bid.Denomination is Denomination.Hearts or Denomination.Spades ? 4 : 5);
+
+    private static int GameLevel(Denomination denomination) => denomination == Denomination.NoTrump
+        ? 3 : denomination is Denomination.Hearts or Denomination.Spades ? 4 : 5;
 
     public Contract? GetContract()
     {
